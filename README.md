@@ -89,6 +89,11 @@ You can use the following instructions (or combine them):
 - `PORT` - Port number the server will run on (default: 3000)
 - `NODE_ENV` - Environment (development/production)
 - `OPENAI_API_KEY` - Your OpenAI API key
+- `GROK_API_KEY` - xAI Grok API key for repository automation
+- `GROK_API_URL` - Optional override for Grok API endpoint (default: `https://api.x.ai/v1/chat/completions`)
+- `GROK_MODEL` - Optional default Grok model (default: `grok-beta`)
+- `DEFAULT_REPO_PATH` - Optional default git repository path for automation endpoint
+- `DEFAULT_TARGET_FILE` - Optional default file path (relative to repo) to be modified
 
 ## Development
 
@@ -108,6 +113,34 @@ To run tests:
 ```bash
 npm test
 ```
+
+## Repository Automation Endpoint
+
+Automate code updates inside a local git clone (for example, a repository synced from GitHub).
+
+### Trigger Grok Automation
+
+**POST** `/api/repo/modify`
+
+**Body**
+```json
+{
+  "repoPath": "/absolute/path/to/local/repo",        // Optional if DEFAULT_REPO_PATH is set
+  "targetFile": "src/example.js",                    // Optional if DEFAULT_TARGET_FILE is set
+  "instruction": "Add inline comments explaining each function.",
+  "commitMessage": "docs: annotate example.js with comments",
+  "model": "grok-beta"
+}
+```
+
+**Behavior**
+
+- Reads the target file from the specified repo.
+- Sends the content and instruction to Grok AI.
+- Writes Grok's response back to the file.
+- Runs `git add`, `git commit`, and `git push` from that repository directory.
+
+> Ensure your git credentials and remote permissions are configured so the server can push changes.
 
 ## Contributing
 

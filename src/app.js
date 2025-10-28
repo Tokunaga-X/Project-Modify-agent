@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const codeRoutes = require('./routes/codeRoutes');
+const repoRoutes = require('./routes/repoRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -11,6 +12,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/code', codeRoutes);
+app.use('/api/repo', repoRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
