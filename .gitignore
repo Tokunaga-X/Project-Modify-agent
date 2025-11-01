@@ -3,6 +3,7 @@ node_modules/
 
 # Environment variables
 .env
+.http
 
 # Logs
 logs
@@ -49,6 +50,10 @@ bower_components
 
 # dotenv environment variables file
 .env
+
+# Local sample files
+.http
+sample-test.js
 
 # next.js build output
 .next

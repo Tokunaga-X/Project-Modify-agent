@@ -82,6 +82,13 @@ const initClient = async (apiKey) => {
  * Call Grok AI to modify source code based on the provided instruction.
  * Returns raw text, extracting code blocks when present.
  */
+const BASE_PROMPT_INSTRUCTION =
+  [
+    "Apply improvements by refactoring the implementation, adding explanatory comments, introducing new functionality or features when appropriate, and creating relevant test cases.",
+    "Only modify the provided file content—do not create new files or mention files you cannot edit.",
+    "Return the complete updated code without any change annotations or explanations.",
+  ].join(" ");
+
 const requestCodeModification = async ({
   code,
   instruction,
@@ -99,9 +106,9 @@ const requestCodeModification = async ({
     throw new AppError("Source code is required for Grok processing", 400);
   }
 
-  const promptInstruction =
-    instruction ||
-    "Refactor this code to improve readability and add helpful inline comments.";
+  const promptInstruction = instruction
+    ? `${BASE_PROMPT_INSTRUCTION}\nAdditional user request: ${instruction}`
+    : BASE_PROMPT_INSTRUCTION;
 
   try {
     const resolvedModel = model || process.env.GROK_MODEL || DEFAULT_MODEL;
@@ -144,7 +151,15 @@ const requestCodeModification = async ({
     const codeBlockRegex = /```(?:\w+)?\n([\s\S]*?)\n```/;
     const match = content.match(codeBlockRegex);
 
-    return match ? match[1].trim() : content.trim();
+    const finalResult = match ? match[1].trim() : content.trim();
+
+    console.log("[GrokRepo] Response received", {
+      filePath: filePath || "unknown file",
+      instruction: promptInstruction,
+      characters: finalResult.length,
+    });
+
+    return finalResult;
   } catch (error) {
     console.error("Error calling Grok API:", {
       message: error.message,
