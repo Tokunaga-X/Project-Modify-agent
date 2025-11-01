@@ -1,1 +1,24 @@
+### Basic request using inline code
 POST http://localhost:4000/api/grok/refactor
+Content-Type: application/json
+
+{
+  "code": "function add(a, b) { return a + b; }",
+  "instruction": "Refactor to use arrow functions and add comments."
+}
+
+### Use default sample file (no code provided)
+POST http://localhost:4000/api/grok/refactor
+Content-Type: application/json
+
+{}
+
+### Specify custom model and instruction
+POST http://localhost:4000/api/grok/refactor
+Content-Type: application/json
+
+{
+  "code": "class Greeter { say(name) { return `Hello ${name}`; } }",
+  "instruction": "Add unit tests and improve readability.",
+  "model": "grok-4"
+}
