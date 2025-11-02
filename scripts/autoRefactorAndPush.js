@@ -3,7 +3,6 @@
 const path = require("path");
 const fs = require("fs/promises");
 const { spawnSync } = require("child_process");
-const fetch = require("node-fetch");
 
 const repoRoot = path.resolve(__dirname, "..");
 const {
@@ -23,6 +22,26 @@ const instruction = GROK_ADDITIONAL_INSTRUCTION || "";
 const targetFilePath = path.isAbsolute(targetFile)
   ? targetFile
   : path.resolve(repoRoot, targetFile);
+
+const getFetch = async () => {
+  if (typeof globalThis.fetch === "function") {
+    return globalThis.fetch;
+  }
+
+  if (getFetch.cached) {
+    return getFetch.cached;
+  }
+
+  const mod = await import("node-fetch");
+  const impl = mod.default || mod;
+
+  if (typeof impl !== "function") {
+    throw new Error("Failed to load fetch implementation");
+  }
+
+  getFetch.cached = impl;
+  return impl;
+};
 
 const runGit = (args) => {
   const result = spawnSync("git", args, {
@@ -66,8 +85,9 @@ const hasGitDiff = (relativePath) => {
 const main = async () => {
   const relativePathForGit = path.relative(repoRoot, targetFilePath);
   const sourceCode = await fs.readFile(targetFilePath, "utf8");
+  const fetchImpl = await getFetch();
 
-  const response = await fetch(endpoint, {
+  const response = await fetchImpl(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
