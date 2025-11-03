@@ -1,11 +1,31 @@
 // Sample file for Grok automation testing
 
 /**
+ * Determines the time of day category based on the given hour.
+ * @param {number} hour - The hour of the day (0-23).
+ * @returns {string} The time of day category ('morning', 'afternoon', 'evening', 'night').
+ */
+function getTimeOfDayFromHour(hour) {
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  if (hour < 21) return 'evening';
+  return 'night';
+}
+
+/**
  * Retrieves the appropriate greeting based on the time of day.
- * @param {string} [timeOfDay] - Optional time of day (e.g., 'morning', 'afternoon', 'evening', 'night').
+ * @param {string|number} [timeOfDay] - Optional time of day (e.g., 'morning', 'afternoon', 'evening', 'night') or hour (0-23).
  * @returns {string} The greeting string.
  */
 function getGreeting(timeOfDay) {
+  let tod = timeOfDay;
+  if (typeof tod === 'number') {
+    if (tod >= 0 && tod < 24) {
+      tod = getTimeOfDayFromHour(tod);
+    } else {
+      tod = undefined;
+    }
+  }
   const greetings = {
     morning: 'Good morning',
     afternoon: 'Good afternoon',
@@ -13,23 +33,28 @@ function getGreeting(timeOfDay) {
     night: 'Good night',
   };
   // Use lowercase for case-insensitive matching, default to 'Hello' if not found
-  return greetings[timeOfDay?.toLowerCase()] || 'Hello';
+  return greetings[tod?.toLowerCase()] || 'Hello';
 }
 
-// Helper function to capitalize the first letter of a string
+/**
+ * Capitalizes the first letter of each word in a string.
+ * @param {string} str - The string to capitalize.
+ * @returns {string} The capitalized string.
+ */
 function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  if (!str) return '';
+  return str.replace(/(^\w|\s\w)/g, char => char.toUpperCase());
 }
 
 /**
  * Greets a person by name, with optional customization for time of day.
  * @param {string} [name='friend'] - The name of the person to greet. Defaults to 'friend' if empty or not provided.
- * @param {string} [timeOfDay] - Optional time of day for a more specific greeting (e.g., 'morning', 'afternoon', 'evening', 'night').
+ * @param {string|number} [timeOfDay] - Optional time of day for a more specific greeting (e.g., 'morning' or 10).
  * @returns {string} A greeting message.
  */
 function greet(name = 'friend', timeOfDay) {
-  // Trim the name and default to 'friend' if empty or whitespace-only
-  let finalName = name.trim();
+  // Handle non-string names by defaulting to 'friend'
+  let finalName = typeof name === 'string' ? name.trim() : '';
   if (!finalName) finalName = 'friend';
   // Capitalize the name
   finalName = capitalize(finalName);
@@ -40,7 +65,7 @@ function greet(name = 'friend', timeOfDay) {
 /**
  * Greets multiple people with a single message, with optional time of day.
  * @param {string[]} names - An array of names to greet.
- * @param {string} [timeOfDay] - Optional time of day for a more specific greeting.
+ * @param {string|number} [timeOfDay] - Optional time of day for a more specific greeting (e.g., 'morning' or 10).
  * @returns {string} A greeting message for all names.
  */
 function greetMultiple(names, timeOfDay) {
@@ -69,6 +94,15 @@ function greetMultiple(names, timeOfDay) {
 // Test cases
 const assert = require('assert');
 
+// Test getGreeting function
+assert.strictEqual(getGreeting('morning'), 'Good morning', 'Should return morning greeting');
+assert.strictEqual(getGreeting(10), 'Good morning', 'Should handle hour 10 as morning');
+assert.strictEqual(getGreeting(15), 'Good afternoon', 'Should handle hour 15 as afternoon');
+assert.strictEqual(getGreeting(19), 'Good evening', 'Should handle hour 19 as evening');
+assert.strictEqual(getGreeting(22), 'Good night', 'Should handle hour 22 as night');
+assert.strictEqual(getGreeting(25), 'Hello', 'Should fallback for invalid hour');
+assert.strictEqual(getGreeting(), 'Hello', 'Should default to Hello');
+
 // Test greet function
 assert.strictEqual(greet('Alice'), 'Hello, Alice!', 'Should greet with default Hello');
 assert.strictEqual(greet(), 'Hello, Friend!', 'Should use default name');
@@ -78,11 +112,17 @@ assert.strictEqual(greet('Charlie', 'afternoon'), 'Good afternoon, Charlie!', 'S
 assert.strictEqual(greet('David', 'evening'), 'Good evening, David!', 'Should greet with evening');
 assert.strictEqual(greet('Eve', 'night'), 'Good night, Eve!', 'Should greet with night');
 assert.strictEqual(greet('Frank', 'noon'), 'Hello, Frank!', 'Should fallback to Hello for unknown time');
+assert.strictEqual(greet('Alice', 'MORNING'), 'Good morning, Alice!', 'Should handle uppercase time');
+assert.strictEqual(greet('Alice', 10), 'Good morning, Alice!', 'Should handle hour as timeOfDay');
+assert.strictEqual(greet('Alice', 25), 'Hello, Alice!', 'Should fallback for invalid hour');
 
 // Test capitalization and trimming for greet
 assert.strictEqual(greet('alice'), 'Hello, Alice!', 'Should capitalize name');
 assert.strictEqual(greet('  bob  '), 'Hello, Bob!', 'Should trim and capitalize');
 assert.strictEqual(greet(' '), 'Hello, Friend!', 'Should default to friend for whitespace name');
+assert.strictEqual(greet('anna maria'), 'Hello, Anna Maria!', 'Should capitalize multi-word name');
+assert.strictEqual(greet(null), 'Hello, Friend!', 'Should handle null name');
+assert.strictEqual(greet(123), 'Hello, Friend!', 'Should handle non-string name');
 
 // Test greetMultiple function
 assert.strictEqual(greetMultiple(['Alice', 'Bob']), 'Hello, Alice and Bob!', 'Should greet two names');
@@ -91,12 +131,15 @@ assert.strictEqual(greetMultiple([]), 'Hello, everyone!', 'Should handle empty a
 assert.strictEqual(greetMultiple(['Charlie']), 'Hello, Charlie!', 'Should handle single name');
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], 'morning'), 'Good morning, Alice and Bob!', 'Should greet multiple with time of day');
 assert.strictEqual(greetMultiple([], 'evening'), 'Good evening, everyone!', 'Should handle empty with time of day');
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], 10), 'Good morning, Alice and Bob!', 'Should handle hour as timeOfDay');
 
 // Test capitalization, filtering, and trimming for greetMultiple
 assert.strictEqual(greetMultiple(['alice', 'bob', 'charlie']), 'Hello, Alice, Bob, and Charlie!', 'Should capitalize multiple names');
 assert.strictEqual(greetMultiple([' ', 'dave', '']), 'Hello, Dave!', 'Should filter out invalid names');
 assert.strictEqual(greetMultiple(['eve  ', '  frank']), 'Hello, Eve and Frank!', 'Should trim names');
 assert.strictEqual(greetMultiple([1, 'bob', null]), 'Hello, Bob!', 'Should filter non-string names');
+assert.strictEqual(greetMultiple(['anna maria', 'john doe']), 'Hello, Anna Maria and John Doe!', 'Should capitalize multi-word names');
+assert.strictEqual(greetMultiple(['A', 'B', 'C', 'D']), 'Hello, A, B, C, and D!', 'Should handle four names');
 
 console.log('All tests passed!');
 
