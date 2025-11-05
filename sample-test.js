@@ -3,10 +3,16 @@
 /**
  * Determines the time of day category based on the given hour.
  * @param {number} hour - The hour of the day (0-23).
- * @returns {string} The time of day category ('morning', 'afternoon', 'evening', 'night').
+ * @returns {string|undefined} The time of day category ('morning', 'afternoon', 'evening', 'night') or undefined if invalid.
  */
 function getTimeOfDayFromHour(hour) {
-  // Assumes hour is an integer between 0 and 23
+  // Validate input: must be integer between 0 and 23 inclusive
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return undefined;
+  // Time ranges:
+  // 0-11: morning
+  // 12-17: afternoon
+  // 18-20: evening
+  // 21-23: night
   if (hour < 12) return 'morning';
   if (hour < 18) return 'afternoon';
   if (hour < 21) return 'evening';
@@ -30,6 +36,12 @@ function getGreeting(timeOfDay) {
   } else if (typeof tod === 'string') {
     // Convert string to lowercase for matching
     tod = tod.toLowerCase();
+    // Check if the string represents a valid hour
+    const hour = Number(tod);
+    if (!isNaN(hour) && Number.isInteger(hour) && hour >= 0 && hour < 24) {
+      tod = getTimeOfDayFromHour(hour);
+    }
+    // If not a number, it remains as string for lookup
   } else {
     tod = undefined;
   }
@@ -93,7 +105,7 @@ function greetMultiple(names, timeOfDay) {
   } else if (validNames.length === 2) {
     formattedNames = `${validNames[0]} and ${validNames[1]}`;
   } else {
-    // Join all but the last with commas, then add 'and' before the last (Oxford comma)
+    // Join all but the last with commas, then add 'and' before the last (using Oxford comma)
     formattedNames = `${validNames.slice(0, -1).join(', ')}, and ${validNames[validNames.length - 1]}`;
   }
   return `${greeting}, ${formattedNames}!`;
@@ -101,6 +113,19 @@ function greetMultiple(names, timeOfDay) {
 
 // Test cases
 const assert = require('assert');
+
+// Test getTimeOfDayFromHour function
+assert.strictEqual(getTimeOfDayFromHour(5), 'morning', 'Should return morning for hour 5');
+assert.strictEqual(getTimeOfDayFromHour(12), 'afternoon', 'Should return afternoon for hour 12');
+assert.strictEqual(getTimeOfDayFromHour(17), 'afternoon', 'Should return afternoon for hour 17');
+assert.strictEqual(getTimeOfDayFromHour(18), 'evening', 'Should return evening for hour 18');
+assert.strictEqual(getTimeOfDayFromHour(20), 'evening', 'Should return evening for hour 20');
+assert.strictEqual(getTimeOfDayFromHour(21), 'night', 'Should return night for hour 21');
+assert.strictEqual(getTimeOfDayFromHour(23), 'night', 'Should return night for hour 23');
+assert.strictEqual(getTimeOfDayFromHour(0), 'morning', 'Should return morning for hour 0');
+assert.strictEqual(getTimeOfDayFromHour(25), undefined, 'Should return undefined for hour 25');
+assert.strictEqual(getTimeOfDayFromHour(-1), undefined, 'Should return undefined for negative hour');
+assert.strictEqual(getTimeOfDayFromHour(10.5), undefined, 'Should return undefined for non-integer hour');
 
 // Test getGreeting function
 assert.strictEqual(getGreeting('morning'), 'Good morning', 'Should return morning greeting');
@@ -123,6 +148,20 @@ assert.strictEqual(getGreeting(invalidDate), 'Hello', 'Should fallback for inval
 assert.strictEqual(getGreeting(10.5), 'Hello', 'Should fallback for non-integer hour');
 assert.strictEqual(getGreeting(-1), 'Hello', 'Should fallback for negative hour');
 assert.strictEqual(getGreeting(24), 'Hello', 'Should fallback for hour 24');
+
+// Additional tests for string hours in getGreeting
+assert.strictEqual(getGreeting('10'), 'Good morning', 'Should handle string hour 10 as morning');
+assert.strictEqual(getGreeting('15'), 'Good afternoon', 'Should handle string hour 15 as afternoon');
+assert.strictEqual(getGreeting('25'), 'Hello', 'Should fallback for invalid string hour');
+assert.strictEqual(getGreeting('10.5'), 'Hello', 'Should fallback for non-integer string hour');
+assert.strictEqual(getGreeting('morning'), 'Good morning', 'Should still handle string time of day');
+
+// Test capitalize function
+assert.strictEqual(capitalize('hello world'), 'Hello World', 'Should capitalize each word');
+assert.strictEqual(capitalize('alice'), 'Alice', 'Should capitalize single word');
+assert.strictEqual(capitalize('anna maria'), 'Anna Maria', 'Should capitalize multi-word');
+assert.strictEqual(capitalize(''), '', 'Should return empty for empty string');
+assert.strictEqual(capitalize('a b c'), 'A B C', 'Should capitalize single letters');
 
 // Test greet function
 assert.strictEqual(greet('Alice'), 'Hello, Alice!', 'Should greet with default Hello');
@@ -165,6 +204,7 @@ assert.strictEqual(greetMultiple(['eve  ', '  frank']), 'Hello, Eve and Frank!',
 assert.strictEqual(greetMultiple([1, 'bob', null]), 'Hello, Bob!', 'Should filter non-string names');
 assert.strictEqual(greetMultiple(['anna maria', 'john doe']), 'Hello, Anna Maria and John Doe!', 'Should capitalize multi-word names');
 assert.strictEqual(greetMultiple(['A', 'B', 'C', 'D']), 'Hello, A, B, C, and D!', 'Should handle four names');
+assert.strictEqual(greetMultiple([null, 123, '']), 'Hello, everyone!', 'Should handle no valid names');
 
 // Additional tests for greetMultiple with Date
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], greetDate), 'Good evening, Alice and Bob!', 'Should handle Date in greetMultiple');
