@@ -56,14 +56,22 @@ function getGreeting(timeOfDay) {
 }
 
 /**
- * Capitalizes the first letter of each word in a string.
+ * Capitalizes the first letter of each word in a string, handling apostrophes and hyphens,
+ * normalizing multiple spaces to single, trimming, and lowercasing the rest of the letters.
  * @param {string} str - The string to capitalize.
  * @returns {string} The capitalized string.
  */
 function capitalize(str) {
   if (!str) return '';
-  // Regex matches the first character of each word and uppercases it
-  return str.replace(/(^\w|\s\w)/g, char => char.toUpperCase());
+  // Normalize multiple spaces to single and trim
+  str = str.trim().replace(/\s+/g, ' ');
+  // Split into words
+  const words = str.split(' ');
+  // Title case each word, handling apostrophes and hyphens
+  const titleCased = words.map(word => {
+    return word.toLowerCase().replace(/(^\w|['-]\w)/g, char => char.toUpperCase());
+  });
+  return titleCased.join(' ');
 }
 
 /**
@@ -162,6 +170,12 @@ assert.strictEqual(capitalize('alice'), 'Alice', 'Should capitalize single word'
 assert.strictEqual(capitalize('anna maria'), 'Anna Maria', 'Should capitalize multi-word');
 assert.strictEqual(capitalize(''), '', 'Should return empty for empty string');
 assert.strictEqual(capitalize('a b c'), 'A B C', 'Should capitalize single letters');
+assert.strictEqual(capitalize("o'connor"), "O'Connor", 'Should handle apostrophe');
+assert.strictEqual(capitalize("anna-maria"), "Anna-Maria", 'Should handle hyphen');
+assert.strictEqual(capitalize("mcdonald"), "Mcdonald", 'Should capitalize simple word');
+assert.strictEqual(capitalize("ALICE"), "Alice", 'Should lower rest');
+assert.strictEqual(capitalize("hello   world"), "Hello World", 'Should normalize spaces');
+assert.strictEqual(capitalize("von der leyen"), "Von Der Leyen", 'Should handle multi-word names');
 
 // Test greet function
 assert.strictEqual(greet('Alice'), 'Hello, Alice!', 'Should greet with default Hello');
@@ -183,6 +197,8 @@ assert.strictEqual(greet(' '), 'Hello, Friend!', 'Should default to friend for w
 assert.strictEqual(greet('anna maria'), 'Hello, Anna Maria!', 'Should capitalize multi-word name');
 assert.strictEqual(greet(null), 'Hello, Friend!', 'Should handle null name');
 assert.strictEqual(greet(123), 'Hello, Friend!', 'Should handle non-string name');
+assert.strictEqual(greet("o'connor"), "Hello, O'Connor!", 'Should handle apostrophe in name');
+assert.strictEqual(greet("ANNA-MARIA"), "Hello, Anna-Maria!", 'Should handle mixed case and hyphen');
 
 // Additional tests for greet with Date
 const greetDate = new Date(2023, 0, 1, 19, 0, 0); // 19:00
@@ -205,6 +221,7 @@ assert.strictEqual(greetMultiple([1, 'bob', null]), 'Hello, Bob!', 'Should filte
 assert.strictEqual(greetMultiple(['anna maria', 'john doe']), 'Hello, Anna Maria and John Doe!', 'Should capitalize multi-word names');
 assert.strictEqual(greetMultiple(['A', 'B', 'C', 'D']), 'Hello, A, B, C, and D!', 'Should handle four names');
 assert.strictEqual(greetMultiple([null, 123, '']), 'Hello, everyone!', 'Should handle no valid names');
+assert.strictEqual(greetMultiple(["o'connor", "mcDonald"]), "Hello, O'Connor and Mcdonald!", 'Should handle special characters in names');
 
 // Additional tests for greetMultiple with Date
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], greetDate), 'Good evening, Alice and Bob!', 'Should handle Date in greetMultiple');
