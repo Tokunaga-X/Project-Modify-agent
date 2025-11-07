@@ -19,12 +19,57 @@ function getTimeOfDayFromHour(hour) {
   return 'night';
 }
 
+// Multilingual support for greetings and defaults
+const greetings = {
+  en: {
+    morning: 'Good morning',
+    afternoon: 'Good afternoon',
+    evening: 'Good evening',
+    night: 'Good night',
+    default: 'Hello'
+  },
+  es: {
+    morning: 'Buenos días',
+    afternoon: 'Buenas tardes',
+    evening: 'Buenas noches',
+    night: 'Buenas noches',
+    default: 'Hola'
+  }
+};
+
+const defaultNames = {
+  en: 'friend',
+  es: 'amigo'
+};
+
+const defaultGroups = {
+  en: 'everyone',
+  es: 'todos'
+};
+
+const lastConjunctions = {
+  en: 'and',
+  es: 'y'
+};
+
+/**
+ * Helper function to get the effective language code, falling back to 'en' if invalid.
+ * @param {string} [lang='en'] - The language code.
+ * @returns {string} The effective language code.
+ */
+function getEffectiveLang(lang = 'en') {
+  const l = typeof lang === 'string' ? lang.toLowerCase() : 'en';
+  return l in greetings ? l : 'en';
+}
+
 /**
  * Retrieves the appropriate greeting based on the time of day.
  * @param {string|number|Date} [timeOfDay] - Optional time of day (e.g., 'morning', 'afternoon', 'evening', 'night'), hour (0-23), or Date object.
+ * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish).
  * @returns {string} The greeting string.
  */
-function getGreeting(timeOfDay) {
+function getGreeting(timeOfDay, lang = 'en') {
+  lang = getEffectiveLang(lang);
   let tod = timeOfDay;
   if (tod instanceof Date) {
     // Extract hour from Date object
@@ -45,19 +90,14 @@ function getGreeting(timeOfDay) {
   } else {
     tod = undefined;
   }
-  const greetings = {
-    morning: 'Good morning',
-    afternoon: 'Good afternoon',
-    evening: 'Good evening',
-    night: 'Good night',
-  };
-  // Return the matching greeting or default to 'Hello'
-  return greetings[tod] || 'Hello';
+  // Return the matching greeting or language-specific default
+  return greetings[lang][tod] || greetings[lang].default;
 }
 
 /**
  * Capitalizes the first letter of each word in a string, handling apostrophes and hyphens,
  * normalizing multiple spaces to single, trimming, and lowercasing the rest of the letters.
+ * Supports Unicode characters.
  * @param {string} str - The string to capitalize.
  * @returns {string} The capitalized string.
  */
@@ -67,37 +107,41 @@ function capitalize(str) {
   str = str.trim().replace(/\s+/g, ' ');
   // Split into words
   const words = str.split(' ');
-  // Title case each word, handling apostrophes and hyphens
+  // Title case each word, handling apostrophes, hyphens, and Unicode
   const titleCased = words.map(word => {
-    return word.toLowerCase().replace(/(^\w|['-]\w)/g, char => char.toUpperCase());
+    return word.toLowerCase().replace(/(^\p{L}|['-]\p{L})/gu, char => char.toUpperCase());
   });
   return titleCased.join(' ');
 }
 
 /**
- * Greets a person by name, with optional customization for time of day.
- * @param {string} [name='friend'] - The name of the person to greet. Defaults to 'friend' if empty or not provided.
+ * Greets a person by name, with optional customization for time of day and language.
+ * @param {string} [name='friend'] - The name of the person to greet. Defaults to a language-specific term if empty or not provided.
  * @param {string|number|Date} [timeOfDay] - Optional time of day for a more specific greeting (e.g., 'morning', 10, or a Date object).
+ * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish).
  * @returns {string} A greeting message.
  */
-function greet(name = 'friend', timeOfDay) {
-  // Handle non-string names by defaulting to 'friend'
+function greet(name = 'friend', timeOfDay, lang = 'en') {
+  const effectiveLang = getEffectiveLang(lang);
+  // Handle non-string names by defaulting to language-specific term
   let finalName = typeof name === 'string' ? name.trim() : '';
-  if (!finalName) finalName = 'friend';
+  if (!finalName) finalName = defaultNames[effectiveLang];
   // Capitalize the name
   finalName = capitalize(finalName);
-  const greeting = getGreeting(timeOfDay);
+  const greeting = getGreeting(timeOfDay, effectiveLang);
   return `${greeting}, ${finalName}!`;
 }
 
 /**
- * Greets multiple people with a single message, with optional time of day.
+ * Greets multiple people with a single message, with optional time of day and language.
  * @param {string[]} names - An array of names to greet.
  * @param {string|number|Date} [timeOfDay] - Optional time of day for a more specific greeting (e.g., 'morning', 10, or a Date object).
+ * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish).
  * @returns {string} A greeting message for all names.
  */
-function greetMultiple(names, timeOfDay) {
-  const greeting = getGreeting(timeOfDay);
+function greetMultiple(names, timeOfDay, lang = 'en') {
+  const effectiveLang = getEffectiveLang(lang);
+  const greeting = getGreeting(timeOfDay, effectiveLang);
   // Filter non-null strings, trim, remove empty, and capitalize
   let validNames = names
     .filter(n => n != null && typeof n === 'string')
@@ -105,16 +149,17 @@ function greetMultiple(names, timeOfDay) {
     .filter(n => n.length > 0)
     .map(capitalize);
   if (validNames.length === 0) {
-    return `${greeting}, everyone!`;
+    return `${greeting}, ${defaultGroups[effectiveLang]}!`;
   }
   let formattedNames;
+  const conjunction = lastConjunctions[effectiveLang];
   if (validNames.length === 1) {
     formattedNames = validNames[0];
   } else if (validNames.length === 2) {
-    formattedNames = `${validNames[0]} and ${validNames[1]}`;
+    formattedNames = `${validNames[0]} ${conjunction} ${validNames[1]}`;
   } else {
-    // Join all but the last with commas, then add 'and' before the last (using Oxford comma)
-    formattedNames = `${validNames.slice(0, -1).join(', ')}, and ${validNames[validNames.length - 1]}`;
+    // Join all but the last with commas, then add conjunction before the last (using Oxford comma)
+    formattedNames = `${validNames.slice(0, -1).join(', ')}, ${conjunction} ${validNames[validNames.length - 1]}`;
   }
   return `${greeting}, ${formattedNames}!`;
 }
@@ -164,6 +209,16 @@ assert.strictEqual(getGreeting('25'), 'Hello', 'Should fallback for invalid stri
 assert.strictEqual(getGreeting('10.5'), 'Hello', 'Should fallback for non-integer string hour');
 assert.strictEqual(getGreeting('morning'), 'Good morning', 'Should still handle string time of day');
 
+// Test getGreeting with language
+assert.strictEqual(getGreeting('morning', 'es'), 'Buenos días', 'Should return Spanish morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'es'), 'Buenas tardes', 'Spanish afternoon');
+assert.strictEqual(getGreeting('evening', 'es'), 'Buenas noches', 'Spanish evening');
+assert.strictEqual(getGreeting('night', 'es'), 'Buenas noches', 'Spanish night');
+assert.strictEqual(getGreeting(undefined, 'es'), 'Hola', 'Spanish default');
+assert.strictEqual(getGreeting('unknown', 'es'), 'Hola', 'Spanish fallback');
+assert.strictEqual(getGreeting(10, 'es'), 'Buenos días', 'Spanish with hour');
+assert.strictEqual(getGreeting('morning', 'fr'), 'Good morning', 'Fallback to en for unknown lang');
+
 // Test capitalize function
 assert.strictEqual(capitalize('hello world'), 'Hello World', 'Should capitalize each word');
 assert.strictEqual(capitalize('alice'), 'Alice', 'Should capitalize single word');
@@ -176,6 +231,9 @@ assert.strictEqual(capitalize("mcdonald"), "Mcdonald", 'Should capitalize simple
 assert.strictEqual(capitalize("ALICE"), "Alice", 'Should lower rest');
 assert.strictEqual(capitalize("hello   world"), "Hello World", 'Should normalize spaces');
 assert.strictEqual(capitalize("von der leyen"), "Von Der Leyen", 'Should handle multi-word names');
+assert.strictEqual(capitalize('maría'), 'María', 'Should capitalize accented name');
+assert.strictEqual(capitalize('ángel'), 'Ángel', 'Should capitalize starting with accent');
+assert.strictEqual(capitalize('garcía-lópez'), 'García-López', 'Should handle accented hyphenated name');
 
 // Test greet function
 assert.strictEqual(greet('Alice'), 'Hello, Alice!', 'Should greet with default Hello');
@@ -204,6 +262,11 @@ assert.strictEqual(greet("ANNA-MARIA"), "Hello, Anna-Maria!", 'Should handle mix
 const greetDate = new Date(2023, 0, 1, 19, 0, 0); // 19:00
 assert.strictEqual(greet('Alice', greetDate), 'Good evening, Alice!', 'Should handle Date in greet');
 
+// Test greet with language
+assert.strictEqual(greet('Alice', 'morning', 'es'), 'Buenos días, Alice!', 'Spanish morning greet');
+assert.strictEqual(greet(undefined, undefined, 'es'), 'Hola, Amigo!', 'Spanish default name');
+assert.strictEqual(greet('maría', undefined, 'es'), 'Hola, María!', 'Spanish with accented name');
+
 // Test greetMultiple function
 assert.strictEqual(greetMultiple(['Alice', 'Bob']), 'Hello, Alice and Bob!', 'Should greet two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie']), 'Hello, Alice, Bob, and Charlie!', 'Should greet three names with Oxford comma');
@@ -225,6 +288,12 @@ assert.strictEqual(greetMultiple(["o'connor", "mcDonald"]), "Hello, O'Connor and
 
 // Additional tests for greetMultiple with Date
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], greetDate), 'Good evening, Alice and Bob!', 'Should handle Date in greetMultiple');
+
+// Test greetMultiple with language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'es'), 'Hola, Alice y Bob!', 'Spanish two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'es'), 'Hola, Alice, Bob y Charlie!', 'Spanish three names');
+assert.strictEqual(greetMultiple([], undefined, 'es'), 'Hola, todos!', 'Spanish no names');
+assert.strictEqual(greetMultiple(['ángel', 'maría'], 'morning', 'es'), 'Buenos días, Ángel y María!', 'Spanish with accents');
 
 console.log('All tests passed!');
 
