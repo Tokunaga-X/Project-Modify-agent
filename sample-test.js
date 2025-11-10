@@ -20,6 +20,7 @@ function getTimeOfDayFromHour(hour) {
 }
 
 // Multilingual support for greetings and defaults
+// Supported languages: en (English), es (Spanish), fr (French), de (German), it (Italian)
 const greetings = {
   en: {
     morning: 'Good morning',
@@ -48,6 +49,13 @@ const greetings = {
     evening: 'Guten Abend',
     night: 'Gute Nacht',
     default: 'Hallo'
+  },
+  it: {
+    morning: 'Buongiorno',
+    afternoon: 'Buon pomeriggio',
+    evening: 'Buonasera',
+    night: 'Buonanotte',
+    default: 'Ciao'
   }
 };
 
@@ -55,21 +63,24 @@ const defaultNames = {
   en: 'friend',
   es: 'amigo',
   fr: 'ami',
-  de: 'Freund'
+  de: 'Freund',
+  it: 'amico'
 };
 
 const defaultGroups = {
   en: 'everyone',
   es: 'todos',
   fr: 'tout le monde',
-  de: 'alle'
+  de: 'alle',
+  it: 'tutti'
 };
 
 const lastConjunctions = {
   en: 'and',
   es: 'y',
   fr: 'et',
-  de: 'und'
+  de: 'und',
+  it: 'e'
 };
 
 /**
@@ -85,7 +96,7 @@ function getEffectiveLang(lang = 'en') {
 /**
  * Retrieves the appropriate greeting based on the time of day.
  * @param {string|number|Date} [timeOfDay] - Optional time of day (e.g., 'morning', 'afternoon', 'evening', 'night', 'now'), hour (0-23), or Date object.
- * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish, 'fr' for French, 'de' for German).
+ * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish, 'fr' for French, 'de' for German, 'it' for Italian).
  * @returns {string} The greeting string.
  */
 function getGreeting(timeOfDay, lang = 'en') {
@@ -129,7 +140,7 @@ function capitalize(str) {
   if (!str) return '';
   // Normalize multiple spaces to single and trim
   str = str.trim().replace(/\s+/g, ' ');
-  // Split into words
+  // Split into words, considering apostrophes and hyphens as part of words
   const words = str.split(' ');
   // Title case each word, handling apostrophes, hyphens, and Unicode
   const titleCased = words.map(word => {
@@ -142,7 +153,7 @@ function capitalize(str) {
  * Greets a person by name, with optional customization for time of day and language.
  * @param {string} [name='friend'] - The name of the person to greet. Defaults to a language-specific term if empty or not provided.
  * @param {string|number|Date} [timeOfDay] - Optional time of day for a more specific greeting (e.g., 'morning', 10, 'now', or a Date object).
- * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish, 'fr' for French, 'de' for German).
+ * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish, 'fr' for French, 'de' for German, 'it' for Italian).
  * @returns {string} A greeting message.
  */
 function greet(name = 'friend', timeOfDay, lang = 'en') {
@@ -160,7 +171,7 @@ function greet(name = 'friend', timeOfDay, lang = 'en') {
  * Greets multiple people with a single message, with optional time of day and language.
  * @param {string[]} names - An array of names to greet.
  * @param {string|number|Date} [timeOfDay] - Optional time of day for a more specific greeting (e.g., 'morning', 10, 'now', or a Date object).
- * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish, 'fr' for French, 'de' for German).
+ * @param {string} [lang='en'] - The language code (e.g., 'en' for English, 'es' for Spanish, 'fr' for French, 'de' for German, 'it' for Italian).
  * @returns {string} A greeting message for all names.
  */
 function greetMultiple(names, timeOfDay, lang = 'en') {
@@ -252,6 +263,16 @@ assert.strictEqual(getGreeting(undefined, 'de'), 'Hallo', 'German default');
 assert.strictEqual(getGreeting('unknown', 'de'), 'Hallo', 'German fallback');
 assert.strictEqual(getGreeting(10, 'de'), 'Guten Morgen', 'German with hour');
 
+// Test getGreeting with Italian language
+assert.strictEqual(getGreeting('morning', 'it'), 'Buongiorno', 'Should return Italian morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'it'), 'Buon pomeriggio', 'Italian afternoon');
+assert.strictEqual(getGreeting('evening', 'it'), 'Buonasera', 'Italian evening');
+assert.strictEqual(getGreeting('night', 'it'), 'Buonanotte', 'Italian night');
+assert.strictEqual(getGreeting(undefined, 'it'), 'Ciao', 'Italian default');
+assert.strictEqual(getGreeting('unknown', 'it'), 'Ciao', 'Italian fallback');
+assert.strictEqual(getGreeting(10, 'it'), 'Buongiorno', 'Italian with hour');
+assert.strictEqual(getGreeting(15, 'it'), 'Buon pomeriggio', 'Italian with afternoon hour');
+
 // Test capitalize function
 assert.strictEqual(capitalize('hello world'), 'Hello World', 'Should capitalize each word');
 assert.strictEqual(capitalize('alice'), 'Alice', 'Should capitalize single word');
@@ -269,6 +290,8 @@ assert.strictEqual(capitalize('ángel'), 'Ángel', 'Should capitalize starting w
 assert.strictEqual(capitalize('garcía-lópez'), 'García-López', 'Should handle accented hyphenated name');
 assert.strictEqual(capitalize('étienne'), 'Étienne', 'Should capitalize accented name');
 assert.strictEqual(capitalize('garçon'), 'Garçon', 'Should capitalize French word');
+assert.strictEqual(capitalize('giovanni'), 'Giovanni', 'Should capitalize Italian name');
+assert.strictEqual(capitalize('d\'alessandro'), 'D\'Alessandro', 'Should handle Italian apostrophe');
 
 // Test greet function
 assert.strictEqual(greet('Alice'), 'Hello, Alice!', 'Should greet with default Hello');
@@ -306,6 +329,12 @@ assert.strictEqual(greet('maría', undefined, 'es'), 'Hola, María!', 'Spanish w
 assert.strictEqual(greet('Alice', 'morning', 'de'), 'Guten Morgen, Alice!', 'German morning greet');
 assert.strictEqual(greet(undefined, undefined, 'de'), 'Hallo, Freund!', 'German default name');
 assert.strictEqual(greet('Jürgen', undefined, 'de'), 'Hallo, Jürgen!', 'German with umlaut name');
+
+// Test greet with Italian language
+assert.strictEqual(greet('Giovanni', 'morning', 'it'), 'Buongiorno, Giovanni!', 'Italian morning greet');
+assert.strictEqual(greet(undefined, undefined, 'it'), 'Ciao, Amico!', 'Italian default name');
+assert.strictEqual(greet('Maria', 'afternoon', 'it'), 'Buon pomeriggio, Maria!', 'Italian afternoon greet');
+assert.strictEqual(greet('d\'Alessandro', undefined, 'it'), 'Ciao, D\'Alessandro!', 'Italian with apostrophe name');
 
 // Test greetMultiple function
 assert.strictEqual(greetMultiple(['Alice', 'Bob']), 'Hello, Alice and Bob!', 'Should greet two names');
@@ -360,6 +389,12 @@ assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'de'), 
 assert.strictEqual(greetMultiple([], undefined, 'de'), 'Hallo, alle!', 'German no names');
 assert.strictEqual(greetMultiple(['Jürgen', 'Müller'], 'morning', 'de'), 'Guten Morgen, Jürgen und Müller!', 'German with umlauts');
 
+// Test greetMultiple with Italian language
+assert.strictEqual(greetMultiple(['Giovanni', 'Maria'], undefined, 'it'), 'Ciao, Giovanni e Maria!', 'Italian two names');
+assert.strictEqual(greetMultiple(['Giovanni', 'Maria', 'Luca'], undefined, 'it'), 'Ciao, Giovanni, Maria e Luca!', 'Italian three names');
+assert.strictEqual(greetMultiple([], undefined, 'it'), 'Ciao, tutti!', 'Italian no names');
+assert.strictEqual(greetMultiple(['d\'Alessandro', 'Rossi'], 'evening', 'it'), 'Buonasera, D\'Alessandro e Rossi!', 'Italian with apostrophe');
+
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
 assert.ok(['Good morning', 'Good afternoon', 'Good evening', 'Good night'].includes(nowGreeting), 'Now should return a time-based greeting in English');
@@ -369,6 +404,9 @@ assert.ok(['Bonjour', 'Bonsoir', 'Bonne nuit'].includes(nowGreetingFr), 'Now sho
 
 const nowGreetingDe = getGreeting('now', 'de');
 assert.ok(['Guten Morgen', 'Guten Tag', 'Guten Abend', 'Gute Nacht'].includes(nowGreetingDe), 'Now should return a time-based greeting in German');
+
+const nowGreetingIt = getGreeting('now', 'it');
+assert.ok(['Buongiorno', 'Buon pomeriggio', 'Buonasera', 'Buonanotte'].includes(nowGreetingIt), 'Now should return a time-based greeting in Italian');
 
 console.log('All tests passed!');
 
