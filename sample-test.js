@@ -90,8 +90,56 @@ const defaultGroups = {
  * @returns {string} The effective language code.
  */
 function getEffectiveLang(lang = 'en') {
+  // Normalize to lowercase and fallback to 'en' if not supported
   const l = typeof lang === 'string' ? lang.toLowerCase() : 'en';
   return l in greetings ? l : 'en';
+}
+
+/**
+ * Normalizes the timeOfDay input to a string category or undefined.
+ * Handles trimming for string inputs to improve robustness.
+ * @param {string|number|Date} tod - The time of day input.
+ * @returns {string|undefined} The normalized time of day category.
+ */
+function normalizeTimeOfDay(tod) {
+  // Handle null or undefined inputs
+  if (tod == null) return undefined;
+
+  // Handle Date objects by extracting hour
+  if (tod instanceof Date) {
+    const hour = tod.getHours();
+    return getTimeOfDayFromHour(hour);
+  }
+
+  // Handle numeric hours directly
+  if (typeof tod === 'number') {
+    return getTimeOfDayFromHour(tod);
+  }
+
+  // Handle string inputs with trimming and normalization
+  if (typeof tod === 'string') {
+    const trimmed = tod.trim();
+    if (trimmed === '') return undefined;
+    const lower = trimmed.toLowerCase();
+
+    // Special case for 'now' to use current time
+    if (lower === 'now') {
+      const hour = new Date().getHours();
+      return getTimeOfDayFromHour(hour);
+    }
+
+    // Attempt to parse as hour number
+    const hour = Number(lower);
+    if (!isNaN(hour) && Number.isInteger(hour) && hour >= 0 && hour <= 23) {
+      return getTimeOfDayFromHour(hour);
+    }
+
+    // Assume it's a time of day category (e.g., 'morning')
+    return lower;
+  }
+
+  // Fallback for invalid types
+  return undefined;
 }
 
 /**
@@ -101,33 +149,12 @@ function getEffectiveLang(lang = 'en') {
  * @returns {string} The greeting string.
  */
 function getGreeting(timeOfDay, lang = 'en') {
+  // Get effective language
   lang = getEffectiveLang(lang);
-  let tod = timeOfDay;
-  if (tod instanceof Date) {
-    // Extract hour from Date object
-    const hour = tod.getHours();
-    tod = Number.isInteger(hour) && hour >= 0 && hour < 24 ? getTimeOfDayFromHour(hour) : undefined;
-  } else if (typeof tod === 'number') {
-    // Check if it's an integer hour between 0 and 23
-    tod = Number.isInteger(tod) && tod >= 0 && tod < 24 ? getTimeOfDayFromHour(tod) : undefined;
-  } else if (typeof tod === 'string') {
-    // Convert string to lowercase for matching
-    tod = tod.toLowerCase();
-    // Handle 'now' case-insensitively
-    if (tod === 'now') {
-      const hour = new Date().getHours();
-      tod = getTimeOfDayFromHour(hour);
-    } else {
-      // Check if the string represents a valid hour
-      const hour = Number(tod);
-      if (!isNaN(hour) && Number.isInteger(hour) && hour >= 0 && hour < 24) {
-        tod = getTimeOfDayFromHour(hour);
-      }
-      // If not a number, it remains as string for lookup
-    }
-  } else {
-    tod = undefined;
-  }
+
+  // Normalize the time of day input
+  const tod = normalizeTimeOfDay(timeOfDay);
+
   // Return the matching greeting or language-specific default
   return greetings[lang][tod] || greetings[lang].default;
 }
@@ -141,14 +168,19 @@ function getGreeting(timeOfDay, lang = 'en') {
  */
 function capitalize(str) {
   if (!str) return '';
-  // Normalize multiple spaces to single and trim
+
+  // Trim leading/trailing spaces and normalize multiple spaces to single
   str = str.trim().replace(/\s+/g, ' ');
-  // Split into words, considering apostrophes and hyphens as part of words
+
+  // Split into words based on spaces
   const words = str.split(' ');
-  // Title case each word, handling apostrophes, hyphens, and Unicode
+
+  // Title case each word, handling apostrophes, hyphens, and Unicode characters
   const titleCased = words.map(word => {
     return word.toLowerCase().replace(/(^\p{L}|['-]\p{L})/gu, char => char.toUpperCase());
   });
+
+  // Join the words back into a single string
   return titleCased.join(' ');
 }
 
@@ -161,12 +193,18 @@ function capitalize(str) {
  */
 function greet(name = 'friend', timeOfDay, lang = 'en') {
   const effectiveLang = getEffectiveLang(lang);
-  // Handle non-string names by defaulting to language-specific term
+
+  // Handle non-string or empty names by using language-specific default
   let finalName = typeof name === 'string' ? name.trim() : '';
   if (!finalName) finalName = defaultNames[effectiveLang];
+
   // Capitalize the name
   finalName = capitalize(finalName);
+
+  // Get the appropriate greeting
   const greeting = getGreeting(timeOfDay, effectiveLang);
+
+  // Construct and return the greeting message
   return `${greeting}, ${finalName}!`;
 }
 
@@ -179,20 +217,49 @@ function greet(name = 'friend', timeOfDay, lang = 'en') {
  */
 function greetMultiple(names, timeOfDay, lang = 'en') {
   const effectiveLang = getEffectiveLang(lang);
+
+  // Get the appropriate greeting
   const greeting = getGreeting(timeOfDay, effectiveLang);
-  // Filter non-null strings, trim, remove empty, and capitalize
+
+  // Filter valid string names, trim, remove empty, and capitalize
   let validNames = names
     .filter(n => n != null && typeof n === 'string')
     .map(n => n.trim())
     .filter(n => n.length > 0)
     .map(capitalize);
+
+  // If no valid names, use default group greeting
   if (validNames.length === 0) {
     return `${greeting}, ${defaultGroups[effectiveLang]}!`;
   }
-  // Use Intl.ListFormat for locale-appropriate list formatting with conjunctions
+
+  // Use Intl.ListFormat for locale-appropriate formatting of the name list
   const formatter = new Intl.ListFormat(effectiveLang, { style: 'long', type: 'conjunction' });
   const formattedNames = formatter.format(validNames);
+
+  // Construct and return the greeting message
   return `${greeting}, ${formattedNames}!`;
+}
+
+/**
+ * Adds support for a new language or overrides an existing one.
+ * @param {string} lang - The language code (e.g., 'nl' for Dutch).
+ * @param {object} greets - The greetings object with keys: morning, afternoon, evening, night, default.
+ * @param {string} defName - Default name for single greetings (e.g., 'vriend').
+ * @param {string} defGroup - Default group for multiple greetings (e.g., 'iedereen').
+ */
+function addLanguage(lang, greets, defName, defGroup) {
+  // Validate language code
+  if (typeof lang !== 'string' || lang.trim().length === 0) throw new Error('Invalid language code');
+
+  // Validate greetings object
+  if (!(greets && typeof greets === 'object' && 'default' in greets)) throw new Error('Invalid greetings object');
+
+  // Normalize language to lowercase and add/override
+  const lowerLang = lang.toLowerCase();
+  greetings[lowerLang] = greets;
+  defaultNames[lowerLang] = defName;
+  defaultGroups[lowerLang] = defGroup;
 }
 
 // Test cases
@@ -430,6 +497,35 @@ assert.ok(['Buongiorno', 'Buon pomeriggio', 'Buonasera', 'Buonanotte'].includes(
 
 const nowGreetingPt = getGreeting('now', 'pt');
 assert.ok(['Bom dia', 'Boa tarde', 'Boa noite'].includes(nowGreetingPt), 'Now should return a time-based greeting in Portuguese');
+
+// Tests for trimming in getGreeting
+assert.strictEqual(getGreeting('morning '), 'Good morning', 'Should trim time of day string');
+assert.strictEqual(getGreeting(' 10 '), 'Good morning', 'Should handle trimmed hour string');
+assert.strictEqual(getGreeting(' '), 'Hello', 'Should fallback for empty string after trim');
+assert.strictEqual(getGreeting('foo '), 'Hello', 'Should fallback for invalid trimmed string');
+assert.ok(['Good morning', 'Good afternoon', 'Good evening', 'Good night'].includes(getGreeting('now ')), 'Should trim now string');
+
+// Tests for addLanguage
+assert.throws(() => addLanguage('', {}, 'a', 'b'), Error, 'Should throw for invalid language code');
+assert.throws(() => addLanguage('xx', {}, 'a', 'b'), Error, 'Should throw for invalid greetings object');
+
+addLanguage('nl', {
+  morning: 'Goedemorgen',
+  afternoon: 'Goedemiddag',
+  evening: 'Goedenavond',
+  night: 'Goedenacht',
+  default: 'Hallo'
+}, 'vriend', 'iedereen');
+
+assert.strictEqual(getGreeting('morning', 'nl'), 'Goedemorgen', 'Should return Dutch morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'nl'), 'Goedemiddag', 'Dutch afternoon');
+assert.strictEqual(getGreeting(undefined, 'nl'), 'Hallo', 'Dutch default');
+
+assert.strictEqual(greet('Alice', 'morning', 'nl'), 'Goedemorgen, Alice!', 'Dutch morning greet');
+assert.strictEqual(greet(undefined, undefined, 'nl'), 'Hallo, Vriend!', 'Dutch default name');
+
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'nl'), 'Hallo, Alice en Bob!', 'Dutch two names');
+assert.strictEqual(greetMultiple([], undefined, 'nl'), 'Hallo, iedereen!', 'Dutch no names');
 
 console.log('All tests passed!');
 
