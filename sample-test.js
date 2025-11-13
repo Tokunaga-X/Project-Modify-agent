@@ -128,6 +128,29 @@ function normalizeTimeOfDay(tod) {
       return getTimeOfDayFromHour(hour);
     }
 
+    // Attempt to parse as 12-hour time string (e.g., '10:00 am')
+    const time12Match = lower.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
+    if (time12Match) {
+      let h = parseInt(time12Match[1], 10);
+      const m = parseInt(time12Match[2], 10);
+      const period = time12Match[3];
+      if (h >= 1 && h <= 12 && m >= 0 && m < 60) {
+        if (period === 'pm' && h < 12) h += 12;
+        if (period === 'am' && h === 12) h = 0;
+        return getTimeOfDayFromHour(h);
+      }
+    }
+
+    // Attempt to parse as 24-hour time string (e.g., '10:00')
+    const timeMatch = lower.match(/^(\d{1,2}):(\d{2})$/);
+    if (timeMatch) {
+      const h = parseInt(timeMatch[1], 10);
+      const m = parseInt(timeMatch[2], 10);
+      if (h >= 0 && h <= 23 && m >= 0 && m < 60) {
+        return getTimeOfDayFromHour(h);
+      }
+    }
+
     // Attempt to parse as hour number
     const hour = Number(lower);
     if (!isNaN(hour) && Number.isInteger(hour) && hour >= 0 && hour <= 23) {
@@ -306,6 +329,25 @@ assert.strictEqual(getGreeting('15'), 'Good afternoon', 'Should handle string ho
 assert.strictEqual(getGreeting('25'), 'Hello', 'Should fallback for invalid string hour');
 assert.strictEqual(getGreeting('10.5'), 'Hello', 'Should fallback for non-integer string hour');
 assert.strictEqual(getGreeting('morning'), 'Good morning', 'Should still handle string time of day');
+
+// Tests for time string parsing in getGreeting
+assert.strictEqual(getGreeting('10:00'), 'Good morning', 'Should handle 10:00 as morning');
+assert.strictEqual(getGreeting('15:30'), 'Good afternoon', 'Should handle 15:30 as afternoon');
+assert.strictEqual(getGreeting('18:45'), 'Good evening', 'Should handle 18:45 as evening');
+assert.strictEqual(getGreeting('22:15'), 'Good night', 'Should handle 22:15 as night');
+assert.strictEqual(getGreeting('00:00'), 'Good morning', 'Should handle 00:00 as morning');
+assert.strictEqual(getGreeting('23:59'), 'Good night', 'Should handle 23:59 as night');
+assert.strictEqual(getGreeting('24:00'), 'Hello', 'Should fallback for invalid hour 24');
+assert.strictEqual(getGreeting('10:60'), 'Hello', 'Should fallback for invalid minute 60');
+assert.strictEqual(getGreeting('1:00'), 'Good morning', 'Should handle single digit hour');
+assert.strictEqual(getGreeting('10:00 am'), 'Good morning', 'Should handle 10:00 am as morning');
+assert.strictEqual(getGreeting('3:30 pm'), 'Good afternoon', 'Should handle 3:30 pm as afternoon');
+assert.strictEqual(getGreeting('6:45 PM'), 'Good evening', 'Should handle 6:45 PM as evening (case insensitive)');
+assert.strictEqual(getGreeting('10:15 pm'), 'Good night', 'Should handle 10:15 pm as night');
+assert.strictEqual(getGreeting('12:00 am'), 'Good morning', 'Should handle 12:00 am as midnight');
+assert.strictEqual(getGreeting('12:00 pm'), 'Good afternoon', 'Should handle 12:00 pm as noon');
+assert.strictEqual(getGreeting('13:00 am'), 'Hello', 'Should fallback for invalid 13:00 am');
+assert.strictEqual(getGreeting('0:00 am'), 'Hello', 'Should fallback for invalid 0:00 am');
 
 // Test getGreeting with language
 assert.strictEqual(getGreeting('morning', 'es'), 'Buenos días', 'Should return Spanish morning greeting');
