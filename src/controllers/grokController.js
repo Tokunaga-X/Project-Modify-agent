@@ -37,6 +37,7 @@ const ensurePathWithinProject = (targetPath) => {
 const collectJsFiles = async (directoryPath) => {
   const entries = await fs.readdir(directoryPath, { withFileTypes: true });
   const files = [];
+  const allowedExtensions = new Set(['.js', '.ts', '.tsx']);
 
   await Promise.all(
     entries.map(async (entry) => {
@@ -56,8 +57,11 @@ const collectJsFiles = async (directoryPath) => {
         return;
       }
 
-      if (entry.isFile() && entry.name.endsWith('.js')) {
-        files.push(entryPath);
+      if (entry.isFile()) {
+        const ext = path.extname(entry.name).toLowerCase();
+        if (allowedExtensions.has(ext)) {
+          files.push(entryPath);
+        }
       }
     })
   );
