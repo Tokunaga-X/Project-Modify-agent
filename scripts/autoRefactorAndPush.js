@@ -14,6 +14,7 @@ const {
   GROK_COMMIT_MESSAGE,
   GROK_GIT_REMOTE,
   GROK_GIT_BRANCH,
+  GROK_GIT_WORKDIR,
 } = process.env;
 
 const parseCliArgs = (argv) => {
@@ -60,6 +61,10 @@ const parseCliArgs = (argv) => {
       case "--instruction":
         setArg("instruction", value);
         break;
+      case "--git-root":
+      case "--git-workdir":
+        setArg("gitWorkdir", value);
+        break;
       default:
         break;
     }
@@ -83,6 +88,10 @@ const targetDirectory = (cliArgs.targetDir ||
 const useDirectoryMode = targetDirectory.length > 0;
 const instruction =
   cliArgs.instruction || GROK_ADDITIONAL_INSTRUCTION || "";
+const gitWorkdirInput =
+  cliArgs.gitWorkdir ||
+  GROK_GIT_WORKDIR ||
+  "";
 
 const toPosix = (maybePath) => maybePath.split(path.sep).join("/");
 
@@ -102,6 +111,34 @@ const resolvePathInRepo = (inputPath) => {
   }
 
   return candidate;
+};
+
+const gitWorkdir =
+  gitWorkdirInput && gitWorkdirInput.trim().length > 0
+    ? resolvePathInRepo(gitWorkdirInput.trim())
+    : repoRoot;
+
+const normalizeBasePath = (basePath) =>
+  basePath.endsWith(path.sep) ? basePath : `${basePath}${path.sep}`;
+
+const relativeToGitWorkdir = (inputPath) => {
+  const absolutePath = path.isAbsolute(inputPath)
+    ? path.resolve(inputPath)
+    : resolvePathInRepo(inputPath);
+
+  const normalizedWorkdir = normalizeBasePath(gitWorkdir);
+  const normalizedPath = path.resolve(absolutePath);
+
+  if (
+    normalizedPath === gitWorkdir ||
+    normalizedPath.startsWith(normalizedWorkdir)
+  ) {
+    return path.relative(gitWorkdir, normalizedPath) || ".";
+  }
+
+  throw new Error(
+    `Path ${inputPath} is outside of git working directory (${gitWorkdir})`
+  );
 };
 
 const getFetch = async () => {
@@ -126,13 +163,17 @@ const getFetch = async () => {
 
 const runGit = (args) => {
   const result = spawnSync("git", args, {
-    cwd: repoRoot,
+    cwd: gitWorkdir,
     stdio: "inherit",
   });
 
   if (result.status !== 0) {
     throw new Error(`git ${args.join(" ")} failed with status ${result.status}`);
   }
+};
+
+const prepareGitTargets = (targets) => {
+  return targets.map((target) => relativeToGitWorkdir(target));
 };
 
 const hasGitDiff = (targets) => {
@@ -145,11 +186,13 @@ const hasGitDiff = (targets) => {
     throw new Error("No git targets provided for diff check");
   }
 
+  const gitTargets = prepareGitTargets(filteredTargets);
+
   const diffResult = spawnSync(
     "git",
-    ["diff", "--quiet", "--exit-code", "HEAD", "--", ...filteredTargets],
+    ["diff", "--quiet", "--exit-code", "HEAD", "--", ...gitTargets],
     {
-      cwd: repoRoot,
+      cwd: gitWorkdir,
     }
   );
 
@@ -191,7 +234,7 @@ const callApi = async (url, body, fetchImpl) => {
 
 const processSingleFile = async (fetchImpl) => {
   const targetFilePath = resolvePathInRepo(targetFile);
-  const relativePathForGit = path.relative(repoRoot, targetFilePath);
+  const gitRelativePath = relativeToGitWorkdir(targetFilePath);
   const sourceCode = await fs.readFile(targetFilePath, "utf8");
 
   const payload = await callApi(
@@ -216,15 +259,15 @@ const processSingleFile = async (fetchImpl) => {
 
   await fs.writeFile(targetFilePath, updatedCode, "utf8");
 
-  if (!hasGitDiff(relativePathForGit)) {
+  if (!hasGitDiff(targetFilePath)) {
     console.log("File content is unchanged after write. Skipping commit.");
     return;
   }
 
-  runGit(["add", relativePathForGit]);
+  runGit(["add", gitRelativePath]);
 
   const commitMessage =
-    GROK_COMMIT_MESSAGE || `chore: auto update ${relativePathForGit}`;
+    GROK_COMMIT_MESSAGE || `chore: auto update ${gitRelativePath}`;
   runGit(["commit", "-m", commitMessage]);
 
   const pushArgs = ["push"];
@@ -282,11 +325,11 @@ const processDirectory = async (fetchImpl) => {
       continue;
     }
 
-    await ensureWritableFile(file.path, file.code);
-    writtenPaths.push(file.path);
+    const absolutePath = await ensureWritableFile(file.path, file.code);
+    writtenPaths.push(absolutePath);
   }
 
-  const uniquePaths = [...new Set(writtenPaths)];
+  const uniquePaths = [...new Set(writtenPaths.map((p) => path.resolve(p)))];
 
   if (uniquePaths.length === 0) {
     console.log("No files were written. Skipping commit.");
@@ -298,7 +341,8 @@ const processDirectory = async (fetchImpl) => {
     return;
   }
 
-  runGit(["add", ...uniquePaths]);
+  const gitTargets = prepareGitTargets(uniquePaths);
+  runGit(["add", ...gitTargets]);
 
   const commitMessage =
     GROK_COMMIT_MESSAGE ||
@@ -318,7 +362,7 @@ const processDirectory = async (fetchImpl) => {
 
   runGit(pushArgs);
   console.log(
-    `Auto update completed for directory ${relativeDir} (${writtenPaths.length} files)`
+    `Auto update completed for directory ${relativeDir} (${uniquePaths.length} files)`
   );
 };
 
