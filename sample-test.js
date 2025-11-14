@@ -63,6 +63,13 @@ const greetings = {
     evening: 'Boa noite',
     night: 'Boa noite',
     default: 'Olá'
+  },
+  ja: {
+    morning: 'おはようございます',
+    afternoon: 'こんにちは',
+    evening: 'こんばんは',
+    night: 'おやすみなさい',
+    default: 'こんにちは'
   }
 };
 
@@ -72,7 +79,8 @@ const defaultNames = {
   fr: 'ami',
   de: 'Freund',
   it: 'amico',
-  pt: 'amigo'
+  pt: 'amigo',
+  ja: 'tomodachi'
 };
 
 const defaultGroups = {
@@ -81,7 +89,8 @@ const defaultGroups = {
   fr: 'tout le monde',
   de: 'alle',
   it: 'tutti',
-  pt: 'todos'
+  pt: 'todos',
+  ja: 'minasan'
 };
 
 /**
@@ -388,6 +397,16 @@ assert.strictEqual(getGreeting('unknown', 'pt'), 'Olá', 'Portuguese fallback');
 assert.strictEqual(getGreeting(10, 'pt'), 'Bom dia', 'Portuguese with hour');
 assert.strictEqual(getGreeting(15, 'pt'), 'Boa tarde', 'Portuguese with afternoon hour');
 
+// Test getGreeting with Japanese language
+assert.strictEqual(getGreeting('morning', 'ja'), 'おはようございます', 'Should return Japanese morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'ja'), 'こんにちは', 'Japanese afternoon');
+assert.strictEqual(getGreeting('evening', 'ja'), 'こんばんは', 'Japanese evening');
+assert.strictEqual(getGreeting('night', 'ja'), 'おやすみなさい', 'Japanese night');
+assert.strictEqual(getGreeting(undefined, 'ja'), 'こんにちは', 'Japanese default');
+assert.strictEqual(getGreeting('unknown', 'ja'), 'こんにちは', 'Japanese fallback');
+assert.strictEqual(getGreeting(10, 'ja'), 'おはようございます', 'Japanese with hour');
+assert.strictEqual(getGreeting(15, 'ja'), 'こんにちは', 'Japanese with afternoon hour');
+
 // Test capitalize function
 assert.strictEqual(capitalize('hello world'), 'Hello World', 'Should capitalize each word');
 assert.strictEqual(capitalize('alice'), 'Alice', 'Should capitalize single word');
@@ -456,6 +475,11 @@ assert.strictEqual(greet('Alice', 'morning', 'pt'), 'Bom dia, Alice!', 'Portugue
 assert.strictEqual(greet(undefined, undefined, 'pt'), 'Olá, Amigo!', 'Portuguese default name');
 assert.strictEqual(greet('João', undefined, 'pt'), 'Olá, João!', 'Portuguese with accented name');
 
+// Test greet with Japanese language
+assert.strictEqual(greet('Alice', 'morning', 'ja'), 'おはようございます, Alice!', 'Japanese morning greet');
+assert.strictEqual(greet(undefined, undefined, 'ja'), 'こんにちは, Tomodachi!', 'Japanese default name');
+assert.strictEqual(greet('太郎', undefined, 'ja'), 'こんにちは, 太郎!', 'Japanese with name');
+
 // Test greetMultiple function
 assert.strictEqual(greetMultiple(['Alice', 'Bob']), 'Hello, Alice and Bob!', 'Should greet two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie']), 'Hello, Alice, Bob, and Charlie!', 'Should greet three names with Oxford comma');
@@ -520,6 +544,11 @@ assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'pt'), 'Olá, Alic
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'pt'), 'Olá, Alice, Bob e Charlie!', 'Portuguese three names');
 assert.strictEqual(greetMultiple([], undefined, 'pt'), 'Olá, todos!', 'Portuguese no names');
 assert.strictEqual(greetMultiple(['João', 'Maria'], 'morning', 'pt'), 'Bom dia, João e Maria!', 'Portuguese with accents');
+
+// Test greetMultiple with Japanese language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ja'), 'こんにちは, AliceとBob!', 'Japanese two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ja'), 'こんにちは, Alice、B、とCharlie!', 'Japanese three names');
+assert.strictEqual(greetMultiple([], undefined, 'ja'), 'こんにちは, minasan!', 'Japanese no names');
 
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
