@@ -7,21 +7,102 @@ const { spawnSync } = require("child_process");
 const repoRoot = path.resolve(__dirname, "..");
 const {
   GROK_CRON_ENDPOINT,
+  GROK_DIRECTORY_ENDPOINT,
   GROK_TARGET_FILE,
+  GROK_TARGET_DIR,
   GROK_ADDITIONAL_INSTRUCTION,
   GROK_COMMIT_MESSAGE,
   GROK_GIT_REMOTE,
   GROK_GIT_BRANCH,
 } = process.env;
 
-const endpoint =
-  GROK_CRON_ENDPOINT || "http://127.0.0.1:3000/api/grok/refactor";
-const targetFile = GROK_TARGET_FILE || "sample-test.js";
-const instruction = GROK_ADDITIONAL_INSTRUCTION || "";
+const parseCliArgs = (argv) => {
+  const args = {};
 
-const targetFilePath = path.isAbsolute(targetFile)
-  ? targetFile
-  : path.resolve(repoRoot, targetFile);
+  const setArg = (key, value) => {
+    if (typeof value === "undefined") {
+      return;
+    }
+
+    args[key] = value;
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const token = argv[i];
+
+    if (!token.startsWith("--")) {
+      continue;
+    }
+
+    const [flag, inlineValue] = token.split("=", 2);
+    let value = inlineValue;
+
+    if (typeof value === "undefined") {
+      const next = argv[i + 1];
+      if (typeof next !== "undefined" && !next.startsWith("--")) {
+        value = next;
+        i += 1;
+      }
+    }
+
+    if (typeof value === "undefined") {
+      continue;
+    }
+
+    switch (flag) {
+      case "--dir":
+      case "--directory":
+        setArg("targetDir", value);
+        break;
+      case "--file":
+        setArg("targetFile", value);
+        break;
+      case "--instruction":
+        setArg("instruction", value);
+        break;
+      default:
+        break;
+    }
+  }
+
+  return args;
+};
+
+const cliArgs = parseCliArgs(process.argv.slice(2));
+
+const singleFileEndpoint =
+  GROK_CRON_ENDPOINT || "http://127.0.0.1:3000/api/grok/refactor";
+const directoryEndpoint =
+  GROK_DIRECTORY_ENDPOINT ||
+  "http://127.0.0.1:3000/api/grok/refactor-directory";
+
+const targetFile =
+  cliArgs.targetFile || GROK_TARGET_FILE || "sample-test.js";
+const targetDirectory = (cliArgs.targetDir ||
+  (typeof GROK_TARGET_DIR === "string" ? GROK_TARGET_DIR.trim() : "")).trim();
+const useDirectoryMode = targetDirectory.length > 0;
+const instruction =
+  cliArgs.instruction || GROK_ADDITIONAL_INSTRUCTION || "";
+
+const toPosix = (maybePath) => maybePath.split(path.sep).join("/");
+
+const resolvePathInRepo = (inputPath) => {
+  const candidate = path.isAbsolute(inputPath)
+    ? inputPath
+    : path.resolve(repoRoot, inputPath);
+
+  const normalizedRoot = repoRoot.endsWith(path.sep)
+    ? repoRoot
+    : `${repoRoot}${path.sep}`;
+
+  if (!candidate.startsWith(normalizedRoot) && candidate !== repoRoot) {
+    throw new Error(
+      `Path ${inputPath} resolves outside of repository root (${repoRoot})`
+    );
+  }
+
+  return candidate;
+};
 
 const getFetch = async () => {
   if (typeof globalThis.fetch === "function") {
@@ -54,10 +135,19 @@ const runGit = (args) => {
   }
 };
 
-const hasGitDiff = (relativePath) => {
+const hasGitDiff = (targets) => {
+  const targetList = Array.isArray(targets) ? targets : [targets];
+  const filteredTargets = targetList.filter(
+    (value) => typeof value === "string" && value.length > 0
+  );
+
+  if (filteredTargets.length === 0) {
+    throw new Error("No git targets provided for diff check");
+  }
+
   const diffResult = spawnSync(
     "git",
-    ["diff", "--quiet", "--exit-code", "HEAD", "--", relativePath],
+    ["diff", "--quiet", "--exit-code", "HEAD", "--", ...filteredTargets],
     {
       cwd: repoRoot,
     }
@@ -82,18 +172,11 @@ const hasGitDiff = (relativePath) => {
   throw new Error("git diff failed to determine changes");
 };
 
-const main = async () => {
-  const relativePathForGit = path.relative(repoRoot, targetFilePath);
-  const sourceCode = await fs.readFile(targetFilePath, "utf8");
-  const fetchImpl = await getFetch();
-
-  const response = await fetchImpl(endpoint, {
+const callApi = async (url, body, fetchImpl) => {
+  const response = await fetchImpl(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      code: sourceCode,
-      instruction,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -103,7 +186,23 @@ const main = async () => {
     );
   }
 
-  const payload = await response.json();
+  return response.json();
+};
+
+const processSingleFile = async (fetchImpl) => {
+  const targetFilePath = resolvePathInRepo(targetFile);
+  const relativePathForGit = path.relative(repoRoot, targetFilePath);
+  const sourceCode = await fs.readFile(targetFilePath, "utf8");
+
+  const payload = await callApi(
+    singleFileEndpoint,
+    {
+      code: sourceCode,
+      instruction,
+    },
+    fetchImpl
+  );
+
   const updatedCode = payload?.data?.processedCode;
 
   if (typeof updatedCode !== "string" || updatedCode.trim().length === 0) {
@@ -141,6 +240,96 @@ const main = async () => {
 
   runGit(pushArgs);
   console.log(`Auto update completed for ${relativePathForGit}`);
+};
+
+const ensureWritableFile = async (relativePath, content) => {
+  const absolutePath = resolvePathInRepo(relativePath);
+  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+  await fs.writeFile(absolutePath, content, "utf8");
+  return absolutePath;
+};
+
+const processDirectory = async (fetchImpl) => {
+  if (!useDirectoryMode) {
+    throw new Error("Directory mode requested without GROK_TARGET_DIR");
+  }
+
+  const resolvedDirectory = resolvePathInRepo(targetDirectory);
+  const relativeDir = path.relative(repoRoot, resolvedDirectory) || ".";
+  const payload = await callApi(
+    directoryEndpoint,
+    {
+      directoryPath: toPosix(relativeDir),
+      instruction,
+    },
+    fetchImpl
+  );
+
+  const processedFiles = payload?.data?.files;
+
+  if (!Array.isArray(processedFiles) || processedFiles.length === 0) {
+    console.log("Directory endpoint returned no files. Skipping commit.");
+    return;
+  }
+
+  console.log(
+    `Applying updates for ${processedFiles.length} files under ${relativeDir}`
+  );
+
+  const writtenPaths = [];
+  for (const file of processedFiles) {
+    if (!file?.path || typeof file.code !== "string") {
+      continue;
+    }
+
+    await ensureWritableFile(file.path, file.code);
+    writtenPaths.push(file.path);
+  }
+
+  const uniquePaths = [...new Set(writtenPaths)];
+
+  if (uniquePaths.length === 0) {
+    console.log("No files were written. Skipping commit.");
+    return;
+  }
+
+  if (!hasGitDiff(uniquePaths)) {
+    console.log("Processed files produced no diff. Skipping commit.");
+    return;
+  }
+
+  runGit(["add", ...uniquePaths]);
+
+  const commitMessage =
+    GROK_COMMIT_MESSAGE ||
+    `chore: auto update ${relativeDir} (${uniquePaths.length} files)`;
+  runGit(["commit", "-m", commitMessage]);
+
+  const pushArgs = ["push"];
+  if (GROK_GIT_REMOTE) {
+    pushArgs.push(GROK_GIT_REMOTE);
+  }
+  if (GROK_GIT_BRANCH) {
+    if (pushArgs.length === 1) {
+      pushArgs.push("origin");
+    }
+    pushArgs.push(GROK_GIT_BRANCH);
+  }
+
+  runGit(pushArgs);
+  console.log(
+    `Auto update completed for directory ${relativeDir} (${writtenPaths.length} files)`
+  );
+};
+
+const main = async () => {
+  const fetchImpl = await getFetch();
+
+  if (useDirectoryMode) {
+    await processDirectory(fetchImpl);
+  } else {
+    await processSingleFile(fetchImpl);
+  }
 };
 
 main().catch((err) => {
