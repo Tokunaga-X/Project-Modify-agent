@@ -70,6 +70,13 @@ const greetings = {
     evening: 'こんばんは',
     night: 'おやすみなさい',
     default: 'こんにちは'
+  },
+  zh: {
+    morning: '早上好',
+    afternoon: '下午好',
+    evening: '晚上好',
+    night: '晚安',
+    default: '你好'
   }
 };
 
@@ -80,7 +87,8 @@ const defaultNames = {
   de: 'Freund',
   it: 'amico',
   pt: 'amigo',
-  ja: 'tomodachi'
+  ja: 'tomodachi',
+  zh: '朋友'
 };
 
 const defaultGroups = {
@@ -90,7 +98,8 @@ const defaultGroups = {
   de: 'alle',
   it: 'tutti',
   pt: 'todos',
-  ja: 'minasan'
+  ja: 'minasan',
+  zh: '大家'
 };
 
 /**
@@ -549,6 +558,26 @@ assert.strictEqual(greetMultiple(['João', 'Maria'], 'morning', 'pt'), 'Bom dia,
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ja'), 'こんにちは, AliceとBob!', 'Japanese two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ja'), 'こんにちは, Alice、B、とCharlie!', 'Japanese three names');
 assert.strictEqual(greetMultiple([], undefined, 'ja'), 'こんにちは, minasan!', 'Japanese no names');
+
+// Test getGreeting with Chinese language
+assert.strictEqual(getGreeting('morning', 'zh'), '早上好', 'Should return Chinese morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'zh'), '下午好', 'Chinese afternoon');
+assert.strictEqual(getGreeting('evening', 'zh'), '晚上好', 'Chinese evening');
+assert.strictEqual(getGreeting('night', 'zh'), '晚安', 'Chinese night');
+assert.strictEqual(getGreeting(undefined, 'zh'), '你好', 'Chinese default');
+assert.strictEqual(getGreeting('unknown', 'zh'), '你好', 'Chinese fallback');
+assert.strictEqual(getGreeting(10, 'zh'), '早上好', 'Chinese with hour');
+assert.strictEqual(getGreeting(15, 'zh'), '下午好', 'Chinese with afternoon hour');
+
+// Test greet with Chinese language
+assert.strictEqual(greet('Alice', 'morning', 'zh'), '早上好, Alice!', 'Chinese morning greet');
+assert.strictEqual(greet(undefined, undefined, 'zh'), '你好, 朋友!', 'Chinese default name');
+assert.strictEqual(greet('李明', undefined, 'zh'), '你好, 李明!', 'Chinese with name');
+
+// Test greetMultiple with Chinese language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'zh'), '你好, Alice和Bob!', 'Chinese two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'zh'), '你好, Alice、Bob和Charlie!', 'Chinese three names');
+assert.strictEqual(greetMultiple([], undefined, 'zh'), '你好, 大家!', 'Chinese no names');
 
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
