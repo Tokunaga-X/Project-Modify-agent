@@ -77,6 +77,13 @@ const greetings = {
     evening: '晚上好',
     night: '晚安',
     default: '你好'
+  },
+  ru: {
+    morning: 'Доброе утро',
+    afternoon: 'Добрый день',
+    evening: 'Добрый вечер',
+    night: 'Доброй ночи',
+    default: 'Привет'
   }
 };
 
@@ -88,7 +95,8 @@ const defaultNames = {
   it: 'amico',
   pt: 'amigo',
   ja: 'tomodachi',
-  zh: '朋友'
+  zh: '朋友',
+  ru: 'друг'
 };
 
 const defaultGroups = {
@@ -99,7 +107,8 @@ const defaultGroups = {
   it: 'tutti',
   pt: 'todos',
   ja: 'minasan',
-  zh: '大家'
+  zh: '大家',
+  ru: 'все'
 };
 
 /**
@@ -578,6 +587,26 @@ assert.strictEqual(greet('李明', undefined, 'zh'), '你好, 李明!', 'Chinese
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'zh'), '你好, Alice和Bob!', 'Chinese two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'zh'), '你好, Alice、Bob和Charlie!', 'Chinese three names');
 assert.strictEqual(greetMultiple([], undefined, 'zh'), '你好, 大家!', 'Chinese no names');
+
+// Test getGreeting with Russian language
+assert.strictEqual(getGreeting('morning', 'ru'), 'Доброе утро', 'Should return Russian morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'ru'), 'Добрый день', 'Russian afternoon');
+assert.strictEqual(getGreeting('evening', 'ru'), 'Добрый вечер', 'Russian evening');
+assert.strictEqual(getGreeting('night', 'ru'), 'Доброй ночи', 'Russian night');
+assert.strictEqual(getGreeting(undefined, 'ru'), 'Привет', 'Russian default');
+assert.strictEqual(getGreeting('unknown', 'ru'), 'Привет', 'Russian fallback');
+assert.strictEqual(getGreeting(10, 'ru'), 'Доброе утро', 'Russian with hour');
+assert.strictEqual(getGreeting(15, 'ru'), 'Добрый день', 'Russian with afternoon hour');
+
+// Test greet with Russian language
+assert.strictEqual(greet('Alice', 'morning', 'ru'), 'Доброе утро, Alice!', 'Russian morning greet');
+assert.strictEqual(greet(undefined, undefined, 'ru'), 'Привет, Друг!', 'Russian default name');
+assert.strictEqual(greet('Иван', undefined, 'ru'), 'Привет, Иван!', 'Russian with name');
+
+// Test greetMultiple with Russian language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ru'), 'Привет, Alice и Bob!', 'Russian two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ru'), 'Привет, Alice, Bob и Charlie!', 'Russian three names');
+assert.strictEqual(greetMultiple([], undefined, 'ru'), 'Привет, все!', 'Russian no names');
 
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
