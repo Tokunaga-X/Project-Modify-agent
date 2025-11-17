@@ -155,11 +155,11 @@ function normalizeTimeOfDay(tod) {
       return getTimeOfDayFromHour(hour);
     }
 
-    // Attempt to parse as 12-hour time string (e.g., '10:00 am')
-    const time12Match = lower.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
+    // Attempt to parse as 12-hour time string (e.g., '10 am' or '10:00 am')
+    const time12Match = lower.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
     if (time12Match) {
       let h = parseInt(time12Match[1], 10);
-      const m = parseInt(time12Match[2], 10);
+      const m = time12Match[2] ? parseInt(time12Match[2], 10) : 0;
       const period = time12Match[3];
       if (h >= 1 && h <= 12 && m >= 0 && m < 60) {
         if (period === 'pm' && h < 12) h += 12;
@@ -168,11 +168,11 @@ function normalizeTimeOfDay(tod) {
       }
     }
 
-    // Attempt to parse as 24-hour time string (e.g., '10:00')
-    const timeMatch = lower.match(/^(\d{1,2}):(\d{2})$/);
+    // Attempt to parse as 24-hour time string (e.g., '10' or '10:00')
+    const timeMatch = lower.match(/^(\d{1,2})(?::(\d{2}))?$/);
     if (timeMatch) {
-      const h = parseInt(timeMatch[1], 10);
-      const m = parseInt(timeMatch[2], 10);
+      let h = parseInt(timeMatch[1], 10);
+      const m = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
       if (h >= 0 && h <= 23 && m >= 0 && m < 60) {
         return getTimeOfDayFromHour(h);
       }
@@ -375,6 +375,11 @@ assert.strictEqual(getGreeting('12:00 am'), 'Good morning', 'Should handle 12:00
 assert.strictEqual(getGreeting('12:00 pm'), 'Good afternoon', 'Should handle 12:00 pm as noon');
 assert.strictEqual(getGreeting('13:00 am'), 'Hello', 'Should fallback for invalid 13:00 am');
 assert.strictEqual(getGreeting('0:00 am'), 'Hello', 'Should fallback for invalid 0:00 am');
+assert.strictEqual(getGreeting('10 am'), 'Good morning', 'Should handle 10 am without minutes');
+assert.strictEqual(getGreeting('3 pm'), 'Good afternoon', 'Should handle 3 pm without minutes');
+assert.strictEqual(getGreeting('12 am'), 'Good morning', 'Should handle 12 am without minutes');
+assert.strictEqual(getGreeting('12 pm'), 'Good afternoon', 'Should handle 12 pm without minutes');
+assert.strictEqual(getGreeting('15'), 'Good afternoon', 'Should handle 15 without colon');
 
 // Test getGreeting with language
 assert.strictEqual(getGreeting('morning', 'es'), 'Buenos días', 'Should return Spanish morning greeting');
