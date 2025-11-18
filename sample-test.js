@@ -380,6 +380,13 @@ assert.strictEqual(getGreeting('3 pm'), 'Good afternoon', 'Should handle 3 pm wi
 assert.strictEqual(getGreeting('12 am'), 'Good morning', 'Should handle 12 am without minutes');
 assert.strictEqual(getGreeting('12 pm'), 'Good afternoon', 'Should handle 12 pm without minutes');
 assert.strictEqual(getGreeting('15'), 'Good afternoon', 'Should handle 15 without colon');
+assert.strictEqual(getGreeting('10am'), 'Good morning', 'Should handle 10am without space or colon');
+assert.strictEqual(getGreeting('3pm'), 'Good afternoon', 'Should handle 3pm without space');
+assert.strictEqual(getGreeting('12pm'), 'Good afternoon', 'Should handle 12pm without space');
+assert.strictEqual(getGreeting('12am'), 'Good morning', 'Should handle 12am without space');
+assert.strictEqual(getGreeting('10:30pm'), 'Good night', 'Should handle 10:30pm without space');
+assert.strictEqual(getGreeting('6:45PM'), 'Good evening', 'Should handle 6:45PM without space');
+assert.strictEqual(getGreeting('13pm'), 'Hello', 'Should fallback for invalid 13pm');
 
 // Test getGreeting with language
 assert.strictEqual(getGreeting('morning', 'es'), 'Buenos días', 'Should return Spanish morning greeting');
