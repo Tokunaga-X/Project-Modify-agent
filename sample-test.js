@@ -639,6 +639,14 @@ assert.ok(['Buongiorno', 'Buon pomeriggio', 'Buonasera', 'Buonanotte'].includes(
 const nowGreetingPt = getGreeting('now', 'pt');
 assert.ok(['Bom dia', 'Boa tarde', 'Boa noite'].includes(nowGreetingPt), 'Now should return a time-based greeting in Portuguese');
 
+// Tests for 'now' in greet
+const nowGreet = greet('Alice', 'now');
+assert.ok(['Good morning, Alice!', 'Good afternoon, Alice!', 'Good evening, Alice!', 'Good night, Alice!'].includes(nowGreet), 'greet with now should return time-based greeting');
+
+// Tests for 'now' in greetMultiple
+const nowGreetMultiple = greetMultiple(['Alice', 'Bob'], 'now');
+assert.ok(['Good morning, Alice and Bob!', 'Good afternoon, Alice and Bob!', 'Good evening, Alice and Bob!', 'Good night, Alice and Bob!'].includes(nowGreetMultiple), 'greetMultiple with now should return time-based greeting');
+
 // Tests for trimming in getGreeting
 assert.strictEqual(getGreeting('morning '), 'Good morning', 'Should trim time of day string');
 assert.strictEqual(getGreeting(' 10 '), 'Good morning', 'Should handle trimmed hour string');
