@@ -84,6 +84,13 @@ const greetings = {
     evening: 'Добрый вечер',
     night: 'Доброй ночи',
     default: 'Привет'
+  },
+  ko: {
+    morning: '좋은 아침입니다',
+    afternoon: '안녕하세요',
+    evening: '안녕하세요',
+    night: '안녕히 주무세요',
+    default: '안녕하세요'
   }
 };
 
@@ -96,7 +103,8 @@ const defaultNames = {
   pt: 'amigo',
   ja: 'tomodachi',
   zh: '朋友',
-  ru: 'друг'
+  ru: 'друг',
+  ko: '친구'
 };
 
 const defaultGroups = {
@@ -108,7 +116,8 @@ const defaultGroups = {
   pt: 'todos',
   ja: 'minasan',
   zh: '大家',
-  ru: 'все'
+  ru: 'все',
+  ko: '여러분'
 };
 
 /**
@@ -619,6 +628,26 @@ assert.strictEqual(greet('Иван', undefined, 'ru'), 'Привет, Иван!'
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ru'), 'Привет, Alice и Bob!', 'Russian two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ru'), 'Привет, Alice, Bob и Charlie!', 'Russian three names');
 assert.strictEqual(greetMultiple([], undefined, 'ru'), 'Привет, все!', 'Russian no names');
+
+// Test getGreeting with Korean language
+assert.strictEqual(getGreeting('morning', 'ko'), '좋은 아침입니다', 'Should return Korean morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'ko'), '안녕하세요', 'Korean afternoon');
+assert.strictEqual(getGreeting('evening', 'ko'), '안녕하세요', 'Korean evening');
+assert.strictEqual(getGreeting('night', 'ko'), '안녕히 주무세요', 'Korean night');
+assert.strictEqual(getGreeting(undefined, 'ko'), '안녕하세요', 'Korean default');
+assert.strictEqual(getGreeting('unknown', 'ko'), '안녕하세요', 'Korean fallback');
+assert.strictEqual(getGreeting(10, 'ko'), '좋은 아침입니다', 'Korean with hour');
+assert.strictEqual(getGreeting(15, 'ko'), '안녕하세요', 'Korean with afternoon hour');
+
+// Test greet with Korean language
+assert.strictEqual(greet('Alice', 'morning', 'ko'), '좋은 아침입니다, Alice!', 'Korean morning greet');
+assert.strictEqual(greet(undefined, undefined, 'ko'), '안녕하세요, 친구!', 'Korean default name');
+assert.strictEqual(greet('민준', undefined, 'ko'), '안녕하세요, 민준!', 'Korean with name');
+
+// Test greetMultiple with Korean language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ko'), '안녕하세요, Alice와 Bob!', 'Korean two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ko'), '안녕하세요, Alice, Bob 및 Charlie!', 'Korean three names');
+assert.strictEqual(greetMultiple([], undefined, 'ko'), '안녕하세요, 여러분!', 'Korean no names');
 
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
