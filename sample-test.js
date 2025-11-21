@@ -165,11 +165,12 @@ function normalizeTimeOfDay(tod) {
     }
 
     // Attempt to parse as 12-hour time string (e.g., '10 am' or '10:00 am')
-    const time12Match = lower.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
+    const time12Match = lower.match(/^(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)$/);
     if (time12Match) {
       let h = parseInt(time12Match[1], 10);
       const m = time12Match[2] ? parseInt(time12Match[2], 10) : 0;
-      const period = time12Match[3];
+      const periodStr = time12Match[3];
+      const period = periodStr.startsWith('a') ? 'am' : 'pm';
       if (h >= 1 && h <= 12 && m >= 0 && m < 60) {
         if (period === 'pm' && h < 12) h += 12;
         if (period === 'am' && h === 12) h = 0;
@@ -396,6 +397,12 @@ assert.strictEqual(getGreeting('12am'), 'Good morning', 'Should handle 12am with
 assert.strictEqual(getGreeting('10:30pm'), 'Good night', 'Should handle 10:30pm without space');
 assert.strictEqual(getGreeting('6:45PM'), 'Good evening', 'Should handle 6:45PM without space');
 assert.strictEqual(getGreeting('13pm'), 'Hello', 'Should fallback for invalid 13pm');
+assert.strictEqual(getGreeting('10 a.m.'), 'Good morning', 'Should handle 10 a.m. as morning');
+assert.strictEqual(getGreeting('3:30 p.m.'), 'Good afternoon', 'Should handle 3:30 p.m. as afternoon');
+assert.strictEqual(getGreeting('6:45p.m.'), 'Good evening', 'Should handle 6:45p.m. without space');
+assert.strictEqual(getGreeting('10:15 pm.'), 'Good night', 'Should handle 10:15 pm. with dot');
+assert.strictEqual(getGreeting('12:00 a.m.'), 'Good morning', 'Should handle 12:00 a.m. as midnight');
+assert.strictEqual(getGreeting('12 p.m.'), 'Good afternoon', 'Should handle 12 p.m. without minutes');
 
 // Test getGreeting with language
 assert.strictEqual(getGreeting('morning', 'es'), 'Buenos días', 'Should return Spanish morning greeting');
