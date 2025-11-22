@@ -712,6 +712,23 @@ assert.strictEqual(greet(undefined, undefined, 'nl'), 'Hallo, Vriend!', 'Dutch d
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'nl'), 'Hallo, Alice en Bob!', 'Dutch two names');
 assert.strictEqual(greetMultiple([], undefined, 'nl'), 'Hallo, iedereen!', 'Dutch no names');
 
+// Test overriding an existing language
+addLanguage('en', {
+  morning: 'Morning!',
+  afternoon: 'Afternoon!',
+  evening: 'Evening!',
+  night: 'Night!',
+  default: 'Hi'
+}, 'buddy', 'folks');
+
+assert.strictEqual(getGreeting('morning', 'en'), 'Morning!', 'Should override English morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'en'), 'Afternoon!', 'Should override English afternoon greeting');
+assert.strictEqual(getGreeting('evening', 'en'), 'Evening!', 'Should override English evening greeting');
+assert.strictEqual(getGreeting('night', 'en'), 'Night!', 'Should override English night greeting');
+assert.strictEqual(getGreeting(undefined, 'en'), 'Hi', 'Should override English default greeting');
+assert.strictEqual(greet(undefined, undefined, 'en'), 'Hi, Buddy!', 'Should override English default name');
+assert.strictEqual(greetMultiple([], undefined, 'en'), 'Hi, folks!', 'Should override English default group');
+
 console.log('All tests passed!');
 
 module.exports = {
