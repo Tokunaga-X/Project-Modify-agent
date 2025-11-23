@@ -91,6 +91,13 @@ const greetings = {
     evening: '안녕하세요',
     night: '안녕히 주무세요',
     default: '안녕하세요'
+  },
+  sv: {
+    morning: 'God morgon',
+    afternoon: 'God eftermiddag',
+    evening: 'God kväll',
+    night: 'God natt',
+    default: 'Hej'
   }
 };
 
@@ -104,7 +111,8 @@ const defaultNames = {
   ja: 'tomodachi',
   zh: '朋友',
   ru: 'друг',
-  ko: '친구'
+  ko: '친구',
+  sv: 'vän'
 };
 
 const defaultGroups = {
@@ -117,7 +125,8 @@ const defaultGroups = {
   ja: 'minasan',
   zh: '大家',
   ru: 'все',
-  ko: '여러분'
+  ko: '여러분',
+  sv: 'alla'
 };
 
 /**
@@ -655,6 +664,26 @@ assert.strictEqual(greet('민준', undefined, 'ko'), '안녕하세요, 민준!',
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ko'), '안녕하세요, Alice와 Bob!', 'Korean two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ko'), '안녕하세요, Alice, Bob 및 Charlie!', 'Korean three names');
 assert.strictEqual(greetMultiple([], undefined, 'ko'), '안녕하세요, 여러분!', 'Korean no names');
+
+// Test getGreeting with Swedish language
+assert.strictEqual(getGreeting('morning', 'sv'), 'God morgon', 'Should return Swedish morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'sv'), 'God eftermiddag', 'Swedish afternoon');
+assert.strictEqual(getGreeting('evening', 'sv'), 'God kväll', 'Swedish evening');
+assert.strictEqual(getGreeting('night', 'sv'), 'God natt', 'Swedish night');
+assert.strictEqual(getGreeting(undefined, 'sv'), 'Hej', 'Swedish default');
+assert.strictEqual(getGreeting('unknown', 'sv'), 'Hej', 'Swedish fallback');
+assert.strictEqual(getGreeting(10, 'sv'), 'God morgon', 'Swedish with hour');
+assert.strictEqual(getGreeting(15, 'sv'), 'God eftermiddag', 'Swedish with afternoon hour');
+
+// Test greet with Swedish language
+assert.strictEqual(greet('Alice', 'morning', 'sv'), 'God morgon, Alice!', 'Swedish morning greet');
+assert.strictEqual(greet(undefined, undefined, 'sv'), 'Hej, Vän!', 'Swedish default name');
+assert.strictEqual(greet('Erik', undefined, 'sv'), 'Hej, Erik!', 'Swedish with name');
+
+// Test greetMultiple with Swedish language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'sv'), 'Hej, Alice och Bob!', 'Swedish two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'sv'), 'Hej, Alice, Bob och Charlie!', 'Swedish three names');
+assert.strictEqual(greetMultiple([], undefined, 'sv'), 'Hej, alla!', 'Swedish no names');
 
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
