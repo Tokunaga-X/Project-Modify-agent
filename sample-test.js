@@ -741,6 +741,33 @@ assert.strictEqual(greet(undefined, undefined, 'nl'), 'Hallo, Vriend!', 'Dutch d
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'nl'), 'Hallo, Alice en Bob!', 'Dutch two names');
 assert.strictEqual(greetMultiple([], undefined, 'nl'), 'Hallo, iedereen!', 'Dutch no names');
 
+addLanguage('ar', {
+  morning: 'صباح الخير',
+  afternoon: 'مساء الخير',
+  evening: 'مساء الخير',
+  night: 'تصبح على خير',
+  default: 'مرحبا'
+}, 'صديق', 'الجميع');
+
+// Test getGreeting with Arabic language
+assert.strictEqual(getGreeting('morning', 'ar'), 'صباح الخير', 'Should return Arabic morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'ar'), 'مساء الخير', 'Arabic afternoon');
+assert.strictEqual(getGreeting('evening', 'ar'), 'مساء الخير', 'Arabic evening');
+assert.strictEqual(getGreeting('night', 'ar'), 'تصبح على خير', 'Arabic night');
+assert.strictEqual(getGreeting(undefined, 'ar'), 'مرحبا', 'Arabic default');
+assert.strictEqual(getGreeting('unknown', 'ar'), 'مرحبا', 'Arabic fallback');
+assert.strictEqual(getGreeting(10, 'ar'), 'صباح الخير', 'Arabic with hour');
+
+// Test greet with Arabic language
+assert.strictEqual(greet('Alice', 'morning', 'ar'), 'صباح الخير, Alice!', 'Arabic morning greet');
+assert.strictEqual(greet(undefined, undefined, 'ar'), 'مرحبا, صديق!', 'Arabic default name');
+assert.strictEqual(greet('أحمد', undefined, 'ar'), 'مرحبا, أحمد!', 'Arabic with name');
+
+// Test greetMultiple with Arabic language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ar'), 'مرحبا, Alice وBob!', 'Arabic two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ar'), 'مرحبا, Alice، Bob وCharlie!', 'Arabic three names');
+assert.strictEqual(greetMultiple([], undefined, 'ar'), 'مرحبا, الجميع!', 'Arabic no names');
+
 // Test overriding an existing language
 addLanguage('en', {
   morning: 'Morning!',
