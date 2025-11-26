@@ -98,6 +98,13 @@ const greetings = {
     evening: 'God kväll',
     night: 'God natt',
     default: 'Hej'
+  },
+  hi: {
+    morning: 'सुप्रभात',
+    afternoon: 'शुभ दोपहर',
+    evening: 'शुभ संध्या',
+    night: 'शुभ रात्रि',
+    default: 'नमस्ते'
   }
 };
 
@@ -112,7 +119,8 @@ const defaultNames = {
   zh: '朋友',
   ru: 'друг',
   ko: '친구',
-  sv: 'vän'
+  sv: 'vän',
+  hi: 'मित्र'
 };
 
 const defaultGroups = {
@@ -126,7 +134,8 @@ const defaultGroups = {
   zh: '大家',
   ru: 'все',
   ko: '여러분',
-  sv: 'alla'
+  sv: 'alla',
+  hi: 'सभी'
 };
 
 /**
@@ -684,6 +693,26 @@ assert.strictEqual(greet('Erik', undefined, 'sv'), 'Hej, Erik!', 'Swedish with n
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'sv'), 'Hej, Alice och Bob!', 'Swedish two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'sv'), 'Hej, Alice, Bob och Charlie!', 'Swedish three names');
 assert.strictEqual(greetMultiple([], undefined, 'sv'), 'Hej, alla!', 'Swedish no names');
+
+// Test getGreeting with Hindi language
+assert.strictEqual(getGreeting('morning', 'hi'), 'सुप्रभात', 'Should return Hindi morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'hi'), 'शुभ दोपहर', 'Hindi afternoon');
+assert.strictEqual(getGreeting('evening', 'hi'), 'शुभ संध्या', 'Hindi evening');
+assert.strictEqual(getGreeting('night', 'hi'), 'शुभ रात्रि', 'Hindi night');
+assert.strictEqual(getGreeting(undefined, 'hi'), 'नमस्ते', 'Hindi default');
+assert.strictEqual(getGreeting('unknown', 'hi'), 'नमस्ते', 'Hindi fallback');
+assert.strictEqual(getGreeting(10, 'hi'), 'सुप्रभात', 'Hindi with hour');
+assert.strictEqual(getGreeting(15, 'hi'), 'शुभ दोपहर', 'Hindi with afternoon hour');
+
+// Test greet with Hindi language
+assert.strictEqual(greet('Alice', 'morning', 'hi'), 'सुप्रभात, Alice!', 'Hindi morning greet');
+assert.strictEqual(greet(undefined, undefined, 'hi'), 'नमस्ते, मित्र!', 'Hindi default name');
+assert.strictEqual(greet('राहुल', undefined, 'hi'), 'नमस्ते, राहुल!', 'Hindi with name');
+
+// Test greetMultiple with Hindi language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'hi'), 'नमस्ते, Alice और Bob!', 'Hindi two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'hi'), 'नमस्ते, Alice, Bob और Charlie!', 'Hindi three names');
+assert.strictEqual(greetMultiple([], undefined, 'hi'), 'नमस्ते, सभी!', 'Hindi no names');
 
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
