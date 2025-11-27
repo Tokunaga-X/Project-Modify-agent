@@ -105,6 +105,13 @@ const greetings = {
     evening: 'शुभ संध्या',
     night: 'शुभ रात्रि',
     default: 'नमस्ते'
+  },
+  tr: {
+    morning: 'Günaydın',
+    afternoon: 'İyi günler',
+    evening: 'İyi akşamlar',
+    night: 'İyi geceler',
+    default: 'Merhaba'
   }
 };
 
@@ -120,7 +127,8 @@ const defaultNames = {
   ru: 'друг',
   ko: '친구',
   sv: 'vän',
-  hi: 'मित्र'
+  hi: 'मित्र',
+  tr: 'arkadaş'
 };
 
 const defaultGroups = {
@@ -135,7 +143,8 @@ const defaultGroups = {
   ru: 'все',
   ko: '여러분',
   sv: 'alla',
-  hi: 'सभी'
+  hi: 'सभी',
+  tr: 'herkes'
 };
 
 /**
@@ -713,6 +722,26 @@ assert.strictEqual(greet('राहुल', undefined, 'hi'), 'नमस्त�
 assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'hi'), 'नमस्ते, Alice और Bob!', 'Hindi two names');
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'hi'), 'नमस्ते, Alice, Bob और Charlie!', 'Hindi three names');
 assert.strictEqual(greetMultiple([], undefined, 'hi'), 'नमस्ते, सभी!', 'Hindi no names');
+
+// Test getGreeting with Turkish language
+assert.strictEqual(getGreeting('morning', 'tr'), 'Günaydın', 'Should return Turkish morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'tr'), 'İyi günler', 'Turkish afternoon');
+assert.strictEqual(getGreeting('evening', 'tr'), 'İyi akşamlar', 'Turkish evening');
+assert.strictEqual(getGreeting('night', 'tr'), 'İyi geceler', 'Turkish night');
+assert.strictEqual(getGreeting(undefined, 'tr'), 'Merhaba', 'Turkish default');
+assert.strictEqual(getGreeting('unknown', 'tr'), 'Merhaba', 'Turkish fallback');
+assert.strictEqual(getGreeting(10, 'tr'), 'Günaydın', 'Turkish with hour');
+assert.strictEqual(getGreeting(15, 'tr'), 'İyi günler', 'Turkish with afternoon hour');
+
+// Test greet with Turkish language
+assert.strictEqual(greet('Alice', 'morning', 'tr'), 'Günaydın, Alice!', 'Turkish morning greet');
+assert.strictEqual(greet(undefined, undefined, 'tr'), 'Merhaba, Arkadaş!', 'Turkish default name');
+assert.strictEqual(greet('Ahmet', undefined, 'tr'), 'Merhaba, Ahmet!', 'Turkish with name');
+
+// Test greetMultiple with Turkish language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'tr'), 'Merhaba, Alice ve Bob!', 'Turkish two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'tr'), 'Merhaba, Alice, Bob ve Charlie!', 'Turkish three names');
+assert.strictEqual(greetMultiple([], undefined, 'tr'), 'Merhaba, herkes!', 'Turkish no names');
 
 // Tests for 'now' feature (non-deterministic, check if valid)
 const nowGreeting = getGreeting('now');
