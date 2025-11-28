@@ -826,6 +826,34 @@ assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'ar'), 'مرحبا
 assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'ar'), 'مرحبا, Alice، Bob وCharlie!', 'Arabic three names');
 assert.strictEqual(greetMultiple([], undefined, 'ar'), 'مرحبا, الجميع!', 'Arabic no names');
 
+addLanguage('pl', {
+  morning: 'Dzień dobry',
+  afternoon: 'Dzień dobry',
+  evening: 'Dobry wieczór',
+  night: 'Dobranoc',
+  default: 'Cześć'
+}, 'przyjaciel', 'wszyscy');
+
+// Test getGreeting with Polish language
+assert.strictEqual(getGreeting('morning', 'pl'), 'Dzień dobry', 'Should return Polish morning greeting');
+assert.strictEqual(getGreeting('afternoon', 'pl'), 'Dzień dobry', 'Polish afternoon');
+assert.strictEqual(getGreeting('evening', 'pl'), 'Dobry wieczór', 'Polish evening');
+assert.strictEqual(getGreeting('night', 'pl'), 'Dobranoc', 'Polish night');
+assert.strictEqual(getGreeting(undefined, 'pl'), 'Cześć', 'Polish default');
+assert.strictEqual(getGreeting('unknown', 'pl'), 'Cześć', 'Polish fallback');
+assert.strictEqual(getGreeting(10, 'pl'), 'Dzień dobry', 'Polish with hour');
+assert.strictEqual(getGreeting(15, 'pl'), 'Dzień dobry', 'Polish with afternoon hour');
+
+// Test greet with Polish language
+assert.strictEqual(greet('Alice', 'morning', 'pl'), 'Dzień dobry, Alice!', 'Polish morning greet');
+assert.strictEqual(greet(undefined, undefined, 'pl'), 'Cześć, Przyjaciel!', 'Polish default name');
+assert.strictEqual(greet('Jan', undefined, 'pl'), 'Cześć, Jan!', 'Polish with name');
+
+// Test greetMultiple with Polish language
+assert.strictEqual(greetMultiple(['Alice', 'Bob'], undefined, 'pl'), 'Cześć, Alice i Bob!', 'Polish two names');
+assert.strictEqual(greetMultiple(['Alice', 'Bob', 'Charlie'], undefined, 'pl'), 'Cześć, Alice, Bob i Charlie!', 'Polish three names');
+assert.strictEqual(greetMultiple([], undefined, 'pl'), 'Cześć, wszyscy!', 'Polish no names');
+
 // Test overriding an existing language
 addLanguage('en', {
   morning: 'Morning!',
