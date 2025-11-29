@@ -349,8 +349,19 @@ function addLanguage(lang, greets, defName, defGroup) {
   defaultGroups[lowerLang] = defGroup;
 }
 
+/**
+ * Returns an array of supported language codes.
+ * @returns {string[]} Array of language codes.
+ */
+function getSupportedLanguages() {
+  return Object.keys(greetings);
+}
+
 // Test cases
 const assert = require('assert');
+
+// Test getSupportedLanguages
+assert.deepStrictEqual(getSupportedLanguages().sort(), ['de', 'en', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pt', 'ru', 'sv', 'tr', 'zh'].sort(), 'Should return initial supported languages');
 
 // Test getTimeOfDayFromHour function
 assert.strictEqual(getTimeOfDayFromHour(5), 'morning', 'Should return morning for hour 5');
@@ -876,4 +887,5 @@ console.log('All tests passed!');
 module.exports = {
   greet,
   greetMultiple,
+  getSupportedLanguages,
 };
